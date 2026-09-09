@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
+import { resolveImageUrlPublic } from '@/lib/images';
 
 interface CategoryRow {
   id: string;
@@ -26,7 +27,40 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(showNew);
   const [form, setForm] = useState({ name: '', description: '', image_url: '' });
+  const [editingSlug, setEditingSlug] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const previewUrl = (path: string) =>
+    resolveImageUrlPublic(path, process.env.NEXT_PUBLIC_SUPABASE_URL);
+
+  const uploadImage = async (file: File) => {
+    if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+      setError('File harus gambar ≤ 5 MB.');
+      return;
+    }
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/admin/category-image', {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Upload gagal.');
+      setForm((prev) => ({
+        ...prev,
+        image_url: (data as { path: string }).path,
+      }));
+      setNotice('Gambar diunggah ke Storage — klik Save untuk menerapkan.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload gagal.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,6 +84,7 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
   const openEdit = (c: CategoryRow) => {
     setEditingId(c.id);
     setCreating(false);
+    setEditingSlug(c.slug);
     setForm({
       name: c.name,
       description: c.description ?? '',
@@ -122,6 +157,7 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
           onClick={() => {
             setCreating(true);
             setEditingId(null);
+            setEditingSlug('');
             setForm({ name: '', description: '', image_url: '' });
           }}
         >
@@ -140,44 +176,77 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
       ) : null}
 
       {(creating || editingId) && (
-        <section className="admin-panel" aria-label="Category form">
+        <section className="admin-panel admin-compact" aria-label="Category form">
           <h2>{editingId ? 'Edit Category' : 'Add Category'}</h2>
-          <div className="admin-form">
-            <label>
-              <span>Name *</span>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Outerwear"
-              />
-            </label>
-            <label>
-              <span>Description</span>
-              <textarea
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>Image URL (object path / URL)</span>
-              <input
-                type="text"
-                value={form.image_url}
-                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                placeholder="/images/look-male-coat.jpeg"
-              />
-            </label>
-            <div className="admin-actions">
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => void submit()}
-                disabled={saving}
-              >
-                {saving ? 'Saving…' : 'Save'}
-              </button>
+          <div className="admin-form admin-form-compact">
+            <div className="admin-edit-grid">
+              <div className="admin-edit-thumb">
+                {form.image_url && previewUrl(form.image_url) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={previewUrl(form.image_url) as string}
+                    alt="Category preview"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="admin-edit-thumb-empty">No image</span>
+                )}
+                <label className="admin-mini-btn">
+                  {uploading ? 'Uploading…' : 'Change'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void uploadImage(f);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="admin-edit-fields">
+                <label>
+                  <span>Name *</span>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Outerwear"
+                  />
+                </label>
+                <label>
+                  <span>Slug</span>
+                  <input
+                    type="text"
+                    value={editingSlug}
+                    readOnly
+                    disabled
+                    placeholder="auto dari nama"
+                  />
+                </label>
+                <label>
+                  <span>Description</span>
+                  <textarea
+                    rows={2}
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </label>
+                <label className="admin-check">
+                  <input
+                    type="checkbox"
+                    checked
+                    readOnly
+                    disabled
+                    aria-label="Active (always on)"
+                  />
+                  <span>Active</span>
+                </label>
+              </div>
+            </div>
+            <div className="admin-actions admin-actions-compact">
               <button
                 type="button"
                 className="btn-outline"
@@ -188,6 +257,14 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
               >
                 Cancel
               </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void submit()}
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         </section>
@@ -197,6 +274,7 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
         <table className="admin-table">
           <thead>
             <tr>
+              <th>Image</th>
               <th>Category</th>
               <th>Description</th>
               <th>Products</th>
@@ -206,15 +284,27 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4}>Memuat kategori…</td>
+                <td colSpan={5}>Memuat kategori...</td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={4}>Belum ada kategori.</td>
+                <td colSpan={5}>Belum ada kategori.</td>
               </tr>
             ) : (
               rows.map((c) => (
                 <tr key={c.id}>
+                  <td>
+                    <span className="admin-thumb-cat" aria-hidden="true">
+                      {previewUrl(c.image_url ?? '') ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={previewUrl(c.image_url ?? '') as string}
+                          alt=""
+                          loading="lazy"
+                        />
+                      ) : null}
+                    </span>
+                  </td>
                   <td>
                     <strong>{c.name}</strong>
                     <br />

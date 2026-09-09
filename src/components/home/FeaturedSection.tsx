@@ -2,8 +2,10 @@ import FeaturedCarousel from './FeaturedCarousel';
 import type { HomepageCmsMap } from '@/services/cms';
 import type { HomepageFeaturedProduct } from '@/services/homepage';
 import { getHomepageFeaturedProducts } from '@/services/homepage';
+import { resolveImageUrl } from '@/lib/images';
 
-export const FALLBACK_FEATURED: HomepageFeaturedProduct[] = [
+// Fallback cards resolve Storage object paths like live data.
+const FALLBACK_RAW = [
   {
     id: 'fallback-oversized-jacket',
     name: 'Oversized Jacket',
@@ -11,7 +13,7 @@ export const FALLBACK_FEATURED: HomepageFeaturedProduct[] = [
     price: 450000,
     featured: true,
     categoryName: 'Outerwear',
-    imageSrc: '/images/look-male-coat.jpeg',
+    image: 'category/look-male-coat.jpeg',
   },
   {
     id: 'fallback-essential-tee',
@@ -20,7 +22,7 @@ export const FALLBACK_FEATURED: HomepageFeaturedProduct[] = [
     price: 195000,
     featured: true,
     categoryName: 'T-Shirts',
-    imageSrc: '/images/look-female-front.jpeg',
+    image: 'category/look-female-front.jpeg',
   },
   {
     id: 'fallback-cargo-pants',
@@ -29,7 +31,7 @@ export const FALLBACK_FEATURED: HomepageFeaturedProduct[] = [
     price: 320000,
     featured: true,
     categoryName: 'Bottoms',
-    imageSrc: '/images/look-male-triple.jpeg',
+    image: 'category/look-male-triple.jpeg',
   },
   {
     id: 'fallback-classic-hoodie',
@@ -38,9 +40,13 @@ export const FALLBACK_FEATURED: HomepageFeaturedProduct[] = [
     price: 375000,
     featured: true,
     categoryName: 'T-Shirts',
-    imageSrc: '/images/look-female-side.jpeg',
+    image: 'category/look-female-side.jpeg',
   },
 ];
+
+export const FALLBACK_FEATURED: HomepageFeaturedProduct[] = FALLBACK_RAW.map(
+  ({ image, ...p }) => ({ ...p, imageSrc: resolveImageUrl(image) })
+);
 
 /**
  * Server boundary for the Featured Collection section.

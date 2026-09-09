@@ -1493,6 +1493,9 @@ a.admin-stat-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rg
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-thumb { width: 3rem; height: 4rem; border-radius: 8px 0 8px 0; overflow: hidden; background: var(--card); position: relative; flex-shrink: 0; }
 .admin-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Category list: compact square thumbnail (products keep .admin-thumb). */
+.admin-thumb-cat { width: 2.5rem; height: 2.5rem; border-radius: 10px; overflow: hidden; background: var(--card); position: relative; flex-shrink: 0; }
+.admin-thumb-cat img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .admin-pill {
   display: inline-block; font-family: var(--font-mono), 'DM Mono', monospace; font-size: 10px;
   letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
@@ -1588,6 +1591,37 @@ a.admin-stat-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rg
 .color-pick input[type="color"]::-webkit-color-swatch { border: none; border-radius: 9999px; }
 .color-preview { width: 1.5rem; height: 1.5rem; border-radius: 9999px; border: 1px solid rgba(0,0,0,.15); }
 .color-pick code { font-family: var(--font-mono), 'DM Mono', monospace; font-size: 12px; }
+
+/* Compact category editor (Admin → Category). */
+.admin-compact { max-width: 44rem; }
+.admin-compact h2 { margin-bottom: .75rem; }
+.admin-form-compact { gap: .75rem; }
+.admin-edit-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px) { .admin-edit-grid { grid-template-columns: 7rem 1fr; } }
+.admin-edit-thumb {
+  width: 7rem; height: 7rem; border-radius: 12px; overflow: hidden;
+  background: var(--card); border: 1px solid rgba(216,213,207,.7);
+  position: relative; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.admin-edit-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.admin-edit-thumb .admin-mini-btn {
+  position: absolute; bottom: .375rem; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,.95); white-space: nowrap;
+}
+.admin-edit-thumb-empty {
+  font-family: var(--font-mono), 'DM Mono', monospace; font-size: 10px;
+  color: var(--muted); text-transform: uppercase; letter-spacing: .1em;
+}
+.admin-edit-fields { display: flex; flex-direction: column; gap: .625rem; min-width: 0; }
+.admin-edit-fields input, .admin-edit-fields textarea {
+  padding: .625rem .875rem; font-size: 13px;
+}
+.admin-edit-fields textarea { min-height: 3.5rem; }
+.admin-actions-compact { margin-top: .25rem; }
+.admin-actions-compact .btn-primary, .admin-actions-compact .btn-outline {
+  padding: .625rem 1.5rem;
+}
 
 /* ──────────────────────────────────────
    KEYFRAMES

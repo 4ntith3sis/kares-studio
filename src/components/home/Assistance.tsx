@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import CardImage from './CardImage';
-import { cmsText } from '@/services/cms';
+import { resolveImageUrlPublic } from '@/lib/images';
+import { cmsImage, cmsText } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
 
 const COLLECTIONS = [
@@ -69,6 +70,15 @@ export default function Assistance({
   const cta = cmsReady
     ? cmsText(map, 'assistance', 'button_text', 'GET STARTED')
     : 'GET STARTED';
+  // CMS-managed photos (client-safe resolver; static Storage paths as fallback).
+  const img1 = resolveImageUrlPublic(
+    cmsImage(map, 'assistance', 'image_1', 'static/assistance/look-male-coat.jpeg'),
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+  );
+  const img2 = resolveImageUrlPublic(
+    cmsImage(map, 'assistance', 'image_2', 'static/assistance/look-female-front.jpeg'),
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+  );
 
   return (
     <section id="assistance">
@@ -87,7 +97,7 @@ export default function Assistance({
               <div className="asst-photo-col left">
                 <div className="asst-img-wrap offset-top">
                   <CardImage
-                    src="/images/look-male-coat.jpeg"
+                    src={img1}
                     alt="Kares Studio look 01"
                     position="center 20%"
                   />
@@ -105,7 +115,7 @@ export default function Assistance({
                 </div>
                 <div className="asst-img-wrap offset-bottom">
                   <CardImage
-                    src="/images/look-female-front.jpeg"
+                    src={img2}
                     alt="Kares Studio look 02"
                     position="center 20%"
                   />

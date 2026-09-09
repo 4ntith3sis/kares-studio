@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import { CMS_SECTIONS } from '@/lib/cms-fields';
+import { resolveImageUrlPublic } from '@/lib/images';
 
 interface Entry {
   section: string;
@@ -27,6 +28,10 @@ export default function AdminCmsClient() {
 
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [needsMigration, setNeedsMigration] = useState(false);
+
+  // Supabase public URL preview (never a local path as source).
+  const previewUrl = (path: string) =>
+    resolveImageUrlPublic(path, process.env.NEXT_PUBLIC_SUPABASE_URL);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -209,7 +214,7 @@ export default function AdminCmsClient() {
                         <input
                           type="text"
                           value={val}
-                          placeholder={f.type === 'image' ? 'cms/… / https://… / /images/…' : ''}
+                          placeholder={f.type === 'image' ? 'cms/... / https://...' : ''}
                           onChange={(e) =>
                             setDrafts((prev) => ({ ...prev, [k]: e.target.value }))
                           }
@@ -220,8 +225,21 @@ export default function AdminCmsClient() {
                       ) : null}
                       {f.type === 'image' ? (
                         <span>
+                          {previewUrl(val) ? (
+                            <span
+                              className="admin-img-cell"
+                              style={{ margin: '.25rem 0 .5rem', display: 'block' }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={previewUrl(val) as string}
+                                alt={`${f.label} preview`}
+                                loading="lazy"
+                              />
+                            </span>
+                          ) : null}
                           <label className="admin-mini-btn" style={{ width: 'fit-content' }}>
-                            {uploadingKey === k ? 'Uploading…' : 'Upload Image'}
+                            {uploadingKey === k ? 'Uploading...' : 'Upload Image → cms/'}
                             <input
                               type="file"
                               accept="image/*"

@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase/query';
+import { resolveImageUrl } from '@/lib/images';
 
 /**
  * Kares Studio — Homepage CMS read layer (public, anon key).
@@ -65,4 +66,18 @@ export function cmsImage(
   const suffixed = cms[section]?.[`${key}__image`];
   if (suffixed !== undefined && suffixed !== '') return suffixed;
   return fallback;
+}
+
+/**
+ * Resolve a CMS image value to a renderable URL via Supabase Storage
+ * (getPublicUrl on the product-images bucket). Absolute URLs pass
+ * through; unresolvable values return null (caller renders fallback).
+ */
+export function cmsImageUrl(
+  cms: HomepageCmsMap,
+  section: string,
+  key: string,
+  fallback: string
+): string | null {
+  return resolveImageUrl(cmsImage(cms, section, key, fallback));
 }

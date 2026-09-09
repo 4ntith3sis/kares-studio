@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import CardImage from './CardImage';
-import { cmsText } from '@/services/cms';
+import { cmsImageUrl, cmsText } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
 
 /** CMS overlay only — markup/styles identical to the final design. */
@@ -19,6 +19,8 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
     'quote',
     '\u201CEvery piece carries rhythm beyond clothing, it\u2019s motion and meaning where street energy meets.\u201D'
   );
+  const imageLeft = cmsImageUrl(cms, 'brand_statement', 'image_left', 'cms/look-male-triple.jpeg');
+  const imageRight = cmsImageUrl(cms, 'brand_statement', 'image_right', 'cms/look-female-side.jpeg');
   return (
     <section id="brand-statement">
       <div className="container-main">
@@ -62,7 +64,7 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
             <div className="img-left-inner">
               <div className="shape-left">
                 <CardImage
-                  src="/images/look-male-triple.jpeg"
+                  src={imageLeft}
                   alt="Kares Studio campaign 2026"
                   position="center 20%"
                 />
@@ -106,7 +108,7 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
           <div className="img-right-col">
             <div className="shape-right">
               <CardImage
-                src="/images/look-female-side.jpeg"
+                src={imageRight}
                 alt="Kares Studio lookbook jacket 2026"
               />
             </div>

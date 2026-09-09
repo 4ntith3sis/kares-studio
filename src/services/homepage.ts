@@ -26,8 +26,19 @@ function pad2(n: number): string {
 }
 
 /**
- * Categories for the homepage section, ordered by creation time
- * (stable editorial order — same every render).
+ * Homepage-only display order by category slug. Categories not in this
+ * list keep their relative order after the four main ones.
+ */
+const HOMEPAGE_CATEGORY_ORDER = [
+  'outerwear',
+  'tops',
+  'bottoms',
+  'accessories',
+];
+
+/**
+ * Categories for the homepage section, ordered by the editorial
+ * slug sequence above (stable — same every render).
  * Errors are thrown to the caller; the section boundary converts them
  * into a safe fallback (never a raw DB error, never a crash).
  */
@@ -39,7 +50,14 @@ export async function getHomepageCategories(): Promise<HomepageCategory[]> {
     .order('created_at', { ascending: true });
   if (error) throw error;
 
-  return ((data ?? []) as Category[]).map((c, i) => ({
+  const rank = (slug: string): number => {
+    const i = HOMEPAGE_CATEGORY_ORDER.indexOf(slug);
+    return i === -1 ? HOMEPAGE_CATEGORY_ORDER.length : i;
+  };
+  const sorted = ((data ?? []) as Category[]).sort(
+    (a, b) => rank(a.slug) - rank(b.slug)
+  );
+  return sorted.map((c, i) => ({
     ...c,
     num: pad2(i + 1),
     imageSrc: resolveImageUrl(c.image_url),

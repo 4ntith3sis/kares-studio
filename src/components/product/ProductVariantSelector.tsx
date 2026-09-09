@@ -71,6 +71,12 @@ export default function ProductVariantSelector({
     : null;
 
   const handleSelectColor = (id: string) => {
+    // Clicking the active color again cancels the selection.
+    if (id === colorId) {
+      setColorId(null);
+      setAddedKey(null);
+      return;
+    }
     setColorId(id);
     // Drop the size when the new color has no variant for it, so the
     // displayed stock/variant never belongs to the previous color.
@@ -84,6 +90,12 @@ export default function ProductVariantSelector({
   };
 
   const handleSelectSize = (id: string) => {
+    // Clicking the active size again cancels the selection.
+    if (id === sizeId) {
+      setSizeId(null);
+      setAddedKey(null);
+      return;
+    }
     setSizeId(id);
     // Drop the color when the new size has no variant for it, so the
     // displayed stock/variant never belongs to the previous size.

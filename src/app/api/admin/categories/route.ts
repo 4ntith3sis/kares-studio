@@ -110,6 +110,16 @@ export async function PATCH(req: Request) {
     const gate = await requireAdmin();
     if ('response' in gate) return gate.response;
     const supabase = getServiceSupabase();
+    // Capture the old image path for safe replacement cleanup.
+    let oldPath: string | null = null;
+    if (patch.image_url !== undefined) {
+      const { data: current } = await supabase
+        .from('categories')
+        .select('image_url')
+        .eq('id', body.id as string)
+        .maybeSingle();
+      oldPath = (current as { image_url: string | null } | null)?.image_url ?? null;
+    }
     const { data, error } = await supabase
       .from('categories')
       .update(patch)
@@ -118,6 +128,24 @@ export async function PATCH(req: Request) {
       .maybeSingle();
     if (error) throw error;
     if (!data) return bad('Category not found.', 404);
+    // Remove the replaced Storage object when it is a category-owned
+    // path and no other category references it.
+    const next = (data as { image_url: string | null }).image_url;
+    if (
+      oldPath &&
+      oldPath !== next &&
+      oldPath.startsWith('category/') &&
+      !oldPath.startsWith('http') &&
+      !oldPath.startsWith('/')
+    ) {
+      const { count } = await supabase
+        .from('categories')
+        .select('id', { count: 'exact', head: true })
+        .eq('image_url', oldPath);
+      if ((count ?? 0) === 0) {
+        await supabase.storage.from('product-images').remove([oldPath]);
+      }
+    }
     revalidateStorefront(['/collection', '/']);
     return NextResponse.json({ category: data });
   } catch (err) {

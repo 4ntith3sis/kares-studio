@@ -107,11 +107,50 @@ export async function PATCH(req: Request) {
       if (r.image_url !== undefined) out.image_url = r.image_url;
       return out;
     });
+    // Capture old image paths for safe Storage cleanup after upsert.
+    const imageKeys = clean.filter((r) => r.image_url !== undefined);
+    let oldPaths: Record<string, string | null> = {};
+    if (imageKeys.length > 0) {
+      const { data: current } = await supabase
+        .from('homepage_content')
+        .select('section, key, image_url')
+        .in(
+          'section',
+          Array.from(new Set(imageKeys.map((r) => r.section as string)))
+        );
+      for (const row of ((current ?? []) as {
+        section: string;
+        key: string;
+        image_url: string | null;
+      }[])) {
+        oldPaths[`${row.section}.${row.key}`] = row.image_url;
+      }
+    }
     const { error } = await supabase
       .from('homepage_content')
       .upsert(clean, { onConflict: 'section,key' });
     if (error) throw error;
-    revalidateStorefront(['/']);
+    // Remove replaced Storage objects when no other row references them.
+    for (const r of imageKeys) {
+      const k = `${r.section}.${r.key}`;
+      const oldPath = oldPaths[k];
+      const next = r.image_url as string | null;
+      if (
+        oldPath &&
+        oldPath !== next &&
+        !oldPath.startsWith('http') &&
+        !oldPath.startsWith('/')
+      ) {
+        const { count } = await supabase
+          .from('homepage_content')
+          .select('section', { count: 'exact', head: true })
+          .eq('image_url', oldPath);
+        if ((count ?? 0) === 0) {
+          await supabase.storage.from('product-images').remove([oldPath]);
+        }
+      }
+    }
+    revalidateStorefront(['/', '/about', '/contact']);
     return NextResponse.json({ ok: true, updated: clean.length });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Save failed.';

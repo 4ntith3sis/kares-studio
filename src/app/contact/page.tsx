@@ -1,6 +1,8 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/home/Footer';
 import CardImage from '@/components/home/CardImage';
+import { cmsImageUrl, getHomepageContent } from '@/services/cms';
+import type { HomepageCmsMap } from '@/services/cms';
 
 /**
  * Kares Studio — Contact page.
@@ -33,7 +35,14 @@ const CHANNELS = [
   },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  let cms: HomepageCmsMap = {};
+  try {
+    cms = await getHomepageContent();
+  } catch {
+    cms = {};
+  }
+  const image = cmsImageUrl(cms, 'contact', 'image', 'static/contact/look-female-front.jpeg');
   return (
     <>
       <Navbar />
@@ -54,7 +63,7 @@ export default function ContactPage() {
           <div className="contact-img-col">
             <div className="contact-img-wrap">
               <CardImage
-                src="/images/look-female-front.jpeg"
+                src={image}
                 alt="Kares Studio contact"
               />
               <div className="cat-corner-tag">

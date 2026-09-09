@@ -11,7 +11,14 @@ import { revalidatePath } from 'next/cache';
  * products keep appearing (and new/edited content stays invisible)
  * until the next deployment or manual refresh cycle.
  */
-export function revalidateStorefront(paths: ('/collection' | '/' | 'product')[] = ['/collection', '/']) {
+export type StorefrontPath =
+  | '/collection'
+  | '/'
+  | '/about'
+  | '/contact'
+  | 'product';
+
+export function revalidateStorefront(paths: StorefrontPath[] = ['/collection', '/']) {
   for (const p of paths) {
     try {
       if (p === 'product') {

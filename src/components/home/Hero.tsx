@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import CardImage from './CardImage';
-import { cmsImage, cmsText } from '@/services/cms';
+import { cmsImageUrl, cmsText } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
 
 /** CMS overlay only — markup/styles identical to the final design. */
@@ -14,7 +14,7 @@ export default function Hero({ cms = {} }: { cms?: HomepageCmsMap }) {
     'Explore curated collections, exclusive drops and everyday essentials all thoughtfully designed in one stylish shopping destination.'
   );
   const buttonText = cmsText(cms, 'hero', 'button_text', 'Shop Collection');
-  const heroImage = cmsImage(cms, 'hero', 'image', '/images/look-female-front.jpeg');
+  const heroImage = cmsImageUrl(cms, 'hero', 'image', 'cms/look-female-front.jpeg');
   const tagline = cmsText(
     cms,
     'hero',

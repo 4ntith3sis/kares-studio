@@ -1,5 +1,5 @@
 import CardImage from './CardImage';
-import { cmsImage, cmsText } from '@/services/cms';
+import { cmsImageUrl, cmsText } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
 
 /** CMS overlay only — markup/styles identical to the final design. */
@@ -11,7 +11,7 @@ export default function Quality({ cms = {} }: { cms?: HomepageCmsMap }) {
     'quote',
     '\u201CEvery piece is crafted with intention. From heavy fabric weights to precise shoulder drops, we design essential garments built to last.\u201D'
   );
-  const image = cmsImage(cms, 'quality', 'image', '/images/look-female-side.jpeg');
+  const image = cmsImageUrl(cms, 'quality', 'image', 'cms/look-female-side.jpeg');
   return (
     <section id="quality">
       <div className="container-main grid-12" style={{ alignItems: 'center' }}>

@@ -1,19 +1,19 @@
 import CategoriesInteractive from './CategoriesInteractive';
 import type { HomepageCategory } from '@/services/homepage';
 import { getHomepageCategories } from '@/services/homepage';
+import { resolveImageUrl } from '@/lib/images';
 
-export const FALLBACK_CATEGORIES: HomepageCategory[] = [
+// Fallback editorial content (DB unreachable/empty). Image paths are
+// Supabase Storage object paths — resolved to public URLs like live data.
+const FALLBACK_RAW = [
   {
     id: 'fallback-outerwear',
     name: 'Outerwear',
     slug: 'outerwear',
     description:
       'Premium jackets and coats crafted for everyday layering and essential streetwear style.',
-    image_url: '/images/look-male-coat.jpeg',
-    created_at: '',
-    updated_at: '',
+    image_url: 'category/look-male-coat.jpeg',
     num: '01',
-    imageSrc: '/images/look-male-coat.jpeg',
   },
   {
     id: 'fallback-tshirts',
@@ -21,11 +21,8 @@ export const FALLBACK_CATEGORIES: HomepageCategory[] = [
     slug: 't-shirts',
     description:
       'Essential streetwear tees made from heavyweight cotton for everyday comfort.',
-    image_url: '/images/look-female-front.jpeg',
-    created_at: '',
-    updated_at: '',
+    image_url: 'category/look-female-front.jpeg',
     num: '02',
-    imageSrc: '/images/look-female-front.jpeg',
   },
   {
     id: 'fallback-bottoms',
@@ -33,11 +30,8 @@ export const FALLBACK_CATEGORIES: HomepageCategory[] = [
     slug: 'bottoms',
     description:
       'Modern cuts from cargo pants to tailored trousers crafted for everyday style.',
-    image_url: '/images/look-male-triple.jpeg',
-    created_at: '',
-    updated_at: '',
+    image_url: 'category/look-male-triple.jpeg',
     num: '03',
-    imageSrc: '/images/look-male-triple.jpeg',
   },
   {
     id: 'fallback-accessories',
@@ -45,13 +39,17 @@ export const FALLBACK_CATEGORIES: HomepageCategory[] = [
     slug: 'accessories',
     description:
       'Statement caps, bags, and finishing touches to complete every look.',
-    image_url: '/images/look-female-side.jpeg',
-    created_at: '',
-    updated_at: '',
+    image_url: 'category/look-female-side.jpeg',
     num: '04',
-    imageSrc: '/images/look-female-side.jpeg',
   },
 ];
+
+export const FALLBACK_CATEGORIES: HomepageCategory[] = FALLBACK_RAW.map((c) => ({
+  ...c,
+  created_at: '',
+  updated_at: '',
+  imageSrc: resolveImageUrl(c.image_url),
+}));
 
 /**
  * Server boundary for the Categories section.

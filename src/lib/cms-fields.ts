@@ -45,6 +45,8 @@ export const CMS_SECTIONS: CmsSection[] = [
       { section: 'brand_statement', key: 'right_label', label: 'Right Label', type: 'text' },
       { section: 'brand_statement', key: 'badge', label: 'Badge', type: 'text' },
       { section: 'brand_statement', key: 'quote', label: 'Quote', type: 'textarea' },
+      { section: 'brand_statement', key: 'image_left', label: 'Image Left', type: 'image', hint: 'Object path Storage (cms/...) / URL' },
+      { section: 'brand_statement', key: 'image_right', label: 'Image Right', type: 'image', hint: 'Object path Storage (cms/...) / URL' },
     ],
   },
   {
@@ -82,11 +84,29 @@ export const CMS_SECTIONS: CmsSection[] = [
   {
     id: 'assistance',
     title: 'Assistance',
-    description: 'Label bantuan dan CTA (daftar koleksi dari data statis).',
+    description: 'Label bantuan, CTA, dan 2 foto section (daftar koleksi dari data statis).',
     fields: [
       { section: 'assistance', key: 'tag', label: 'Topbar Tag', type: 'text' },
       { section: 'assistance', key: 'description', label: 'Description', type: 'textarea' },
       { section: 'assistance', key: 'button_text', label: 'Button Text', type: 'text' },
+      { section: 'assistance', key: 'image_1', label: 'Assistance Image 1', type: 'image', hint: 'Object path Storage (static/assistance/...) / URL' },
+      { section: 'assistance', key: 'image_2', label: 'Assistance Image 2', type: 'image', hint: 'Object path Storage (static/assistance/...) / URL' },
+    ],
+  },
+  {
+    id: 'about',
+    title: 'About Page',
+    description: 'Foto halaman About (teks About tetap statis).',
+    fields: [
+      { section: 'about', key: 'image', label: 'About Image', type: 'image', hint: 'Object path Storage (static/about/...) / URL' },
+    ],
+  },
+  {
+    id: 'contact',
+    title: 'Contact Page',
+    description: 'Foto halaman Contact (teks Contact tetap statis).',
+    fields: [
+      { section: 'contact', key: 'image', label: 'Contact Image', type: 'image', hint: 'Object path Storage (static/contact/...) / URL' },
     ],
   },
   {

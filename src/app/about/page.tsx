@@ -2,6 +2,9 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/home/Footer';
 import CardImage from '@/components/home/CardImage';
+import { cmsImageUrl } from '@/services/cms';
+import { getHomepageContent } from '@/services/cms';
+import type { HomepageCmsMap } from '@/services/cms';
 
 const PILLARS = [
   {
@@ -23,10 +26,17 @@ const PILLARS = [
 
 /**
  * Kares Studio — About page.
- * Editorial layout reusing homepage tokens (section-tag, clip-path cards,
- * mono labels, pill buttons). Copy follows the homepage brand voice.
+ * Editorial layout reusing homepage tokens. Photo is CMS-managed
+ * (about.image) with a static Storage fallback — layout unchanged.
  */
-export default function AboutPage() {
+export default async function AboutPage() {
+  let cms: HomepageCmsMap = {};
+  try {
+    cms = await getHomepageContent();
+  } catch {
+    cms = {};
+  }
+  const image = cmsImageUrl(cms, 'about', 'image', 'static/about/look-male-triple.jpeg');
   return (
     <>
       <Navbar />
@@ -47,7 +57,7 @@ export default function AboutPage() {
           <div className="about-img-col">
             <div className="about-img-wrap">
               <CardImage
-                src="/images/look-male-triple.jpeg"
+                src={image}
                 alt="Kares Studio campaign 2026"
                 position="center 20%"
               />
