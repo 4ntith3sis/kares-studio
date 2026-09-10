@@ -61,11 +61,11 @@ export default function Assistance({
     : '[07 // CUSTOMER ASSISTANCE]';
   const desc = cmsReady
     ? cmsText(
-        map,
-        'assistance',
-        'description',
-        'Your go-to wardrobe staples, crafted for comfort and effortless style.'
-      )
+      map,
+      'assistance',
+      'description',
+      'Your go-to wardrobe staples, crafted for comfort and effortless style.'
+    )
     : 'Your go-to wardrobe staples, crafted for comfort and effortless style.';
   const cta = cmsReady
     ? cmsText(map, 'assistance', 'button_text', 'GET STARTED')
@@ -103,7 +103,7 @@ export default function Assistance({
                   />
                 </div>
                 <div className="asst-label-below">
-                  <span className="moment-mark" aria-hidden="true">✳</span>
+                  <span className="moment-mark" aria-hidden="true">✹</span>
                   <span className="handle">[Wear the Moment]</span>
                 </div>
               </div>
