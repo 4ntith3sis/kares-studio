@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
+import ConfirmDialog, {
+  type ConfirmDialogData,
+} from '@/components/admin/ConfirmDialog';
 import { formatIDR } from '@/lib/utils/format';
 import { resolveImageUrlPublic } from '@/lib/images';
 
@@ -184,6 +188,26 @@ function VariantAdder({
  * List + search/filter/sort + create/edit + active toggle + delete guard.
  * All writes via /api/admin/products (service role, server-side).
  */
+
+/** Ritme baris agar kolom bercabang (size/stock/aksi) sejajar per varian. */
+const VARIANT_ROW_H = 2.5; // rem
+const variantLine: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  minHeight: `${VARIANT_ROW_H}rem`,
+};
+
+/** Kelompokkan varian berurutan berdasarkan kunci (mis. warna yang sama jadi 1 grup). */
+function groupInto<V>(list: V[], keyOf: (v: V) => string): V[][] {
+  const groups: { key: string; items: V[] }[] = [];
+  for (const item of list) {
+    const key = keyOf(item);
+    const g = groups.find((x) => x.key === key);
+    if (g) g.items.push(item);
+    else groups.push({ key, items: [item] });
+  }
+  return groups.map((g) => g.items);
+}
 export default function AdminProductsClient({
   initialStatus,
   initialSearch,
@@ -198,6 +222,9 @@ export default function AdminProductsClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<
+    (ConfirmDialogData & { action: () => void }) | null
+  >(null);
 
   const [search, setSearch] = useState(initialSearch);
   const [status, setStatus] = useState(initialStatus);
@@ -500,14 +527,78 @@ export default function AdminProductsClient({
     }
   };
 
-  const removeFormVariant = async (id: string) => {
-    if (!editing || !window.confirm('Hapus variant ini?')) return;
+  const variantLabel = (id: string) => {
+    const target = formVariants.find((x) => x.id === id);
+    return `${target?.color?.name ?? '?'} / ${target?.size?.name ?? '?'}`;
+  };
+
+  const askRemoveVariant = (id: string) => {
+    setConfirm({
+      title: 'Hapus Variant?',
+      message: `Hapus variant ${variantLabel(id)}?`,
+      confirmLabel: 'Ya, Hapus',
+      danger: true,
+      action: () => void doRemoveVariant(id),
+    });
+  };
+
+  const doRemoveVariant = async (id: string) => {
+    if (!editing) return;
     try {
-      const res = await fetch(`/api/admin/variants?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
+      // Step 1: coba hapus; API melaporkan bila masih ada riwayat transaksi.
+      let res = await fetch(
+        `/api/admin/variants?id=${encodeURIComponent(id)}`,
+        { method: 'DELETE' }
+      );
+      let data = (await res.json()) as {
+        error?: string;
+        transactions?: number;
+        deletedTransactions?: number;
+      };
+      // Step 2: ada riwayat → konfirmasi hapus beserta riwayatnya.
+      if (res.status === 409 && typeof data.transactions === 'number') {
+        const count = data.transactions;
+        setConfirm({
+          title: 'Hapus Beserta Riwayat?',
+          message: `Variant ${variantLabel(id)} memiliki ${count} transaksi inventory. Hapus variant BESERTA seluruh riwayat transaksinya?`,
+          confirmLabel: 'Ya, Hapus Semua',
+          danger: true,
+          action: () => void doRemoveVariantConfirmed(id),
+        });
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? 'Hapus variant gagal.');
+      setNotice(
+        `Variant ${variantLabel(id)} dihapus.` +
+          (data.deletedTransactions
+            ? ` (${data.deletedTransactions} riwayat transaksi ikut dihapus.)`
+            : '')
+      );
+      await loadFormVariants(editing.id);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Hapus variant gagal.');
+    }
+  };
+
+  const doRemoveVariantConfirmed = async (id: string) => {
+    if (!editing) return;
+    try {
+      const res = await fetch(
+        `/api/admin/variants?id=${encodeURIComponent(id)}&confirm=1`,
+        { method: 'DELETE' }
+      );
+      const data = (await res.json()) as {
+        error?: string;
+        deletedTransactions?: number;
+      };
+      if (!res.ok) throw new Error(data.error ?? 'Hapus variant gagal.');
+      setNotice(
+        `Variant ${variantLabel(id)} dihapus.` +
+          (data.deletedTransactions
+            ? ` (${data.deletedTransactions} riwayat transaksi ikut dihapus.)`
+            : '')
+      );
       await loadFormVariants(editing.id);
       await load();
     } catch (e) {
@@ -579,8 +670,19 @@ export default function AdminProductsClient({
     }
   };
 
+  const askRemoveFormImage = (id: string, index: number) => {
+    if (!editing) return;
+    setConfirm({
+      title: 'Hapus Gambar?',
+      message: `Gambar #${index + 1} akan dihapus permanen dari produk ini.`,
+      confirmLabel: 'Ya, Hapus',
+      danger: true,
+      action: () => void removeFormImage(id),
+    });
+  };
+
   const removeFormImage = async (id: string) => {
-    if (!editing || !window.confirm('Hapus gambar ini?')) return;
+    if (!editing) return;
     try {
       const res = await fetch(`/api/admin/images?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -698,14 +800,17 @@ export default function AdminProductsClient({
     const summary = impact
       ? ` (${impact.variants} variant, ${impact.images} gambar, ${impact.transactions} transaksi inventory, ${impact.storageFiles} file Storage)`
       : '';
-    if (
-      !window.confirm(
-        `Apakah Anda yakin ingin menghapus product ini? Semua data product, variant, inventory terkait, dan gambar di Supabase Storage akan dihapus secara permanen.${summary}`
-      )
-    ) {
-      return;
-    }
-    // Step 2: confirmed hard delete.
+    // Step 2: designed confirmation with impact summary.
+    setConfirm({
+      title: 'Hapus Produk Permanen?',
+      message: `Semua data product, variant, inventory terkait, dan gambar di Supabase Storage akan dihapus secara permanen.${summary}`,
+      confirmLabel: 'Ya, Hapus Permanen',
+      danger: true,
+      action: () => void doRemoveConfirmed(p),
+    });
+  };
+
+  const doRemoveConfirmed = async (p: ProductRow) => {
     try {
       const res = await fetch(
         `/api/admin/products?id=${encodeURIComponent(p.id)}&confirm=1`,
@@ -731,6 +836,15 @@ export default function AdminProductsClient({
 
   return (
     <AdminShell title="Products">
+      <ConfirmDialog
+        dialog={confirm}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          const c = confirm;
+          setConfirm(null);
+          c?.action();
+        }}
+      />
       <div className="admin-toolbar" role="search">
         <input
           type="search"
@@ -896,7 +1010,7 @@ export default function AdminProductsClient({
                         ) : null}
                         <button
                           type="button"
-                          onClick={() => void removeFormImage(img.id)}
+                          onClick={() => askRemoveFormImage(img.id, i)}
                           aria-label={`Delete image ${i + 1}`}
                         >
                           ×
@@ -947,49 +1061,69 @@ export default function AdminProductsClient({
                             <tr>
                               <th>Color</th>
                               <th>Size</th>
-                              <th>Stock</th>
-                              <th>Action</th>
+                              <th style={{ textAlign: 'center' }}>Action</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {formVariants.map((v) => (
-                              <tr key={v.id}>
-                                <td>
-                                  <span
-                                    className="cart-dot"
-                                    style={{
-                                      backgroundColor: v.color?.hex_code ?? 'var(--border)',
-                                      display: 'inline-block',
-                                      marginRight: '.5rem',
-                                    }}
-                                    aria-hidden="true"
-                                  />
-                                  {v.color?.name ?? '?'}
-                                  <br />
-                                  <span style={{ color: 'var(--muted)', fontSize: 11 }}>
-                                    {v.color?.hex_code ?? ''}
-                                  </span>
-                                </td>
-                                <td>{v.size?.name ?? '?'}</td>
-                                <td>
-                                  {v.stock > 0 ? (
-                                    v.stock
-                                  ) : (
-                                    <span className="admin-pill out">Out of Stock</span>
-                                  )}
-                                </td>
-                                <td>
-                                  <button
-                                    type="button"
-                                    className="admin-mini-btn danger"
-                                    onClick={() => void removeFormVariant(v.id)}
-                                    aria-label={`Delete variant ${v.color?.name} ${v.size?.name}`}
-                                  >
-                                    Delete
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
+                            {groupInto(formVariants, (v) => v.color?.id ?? v.id).map(
+                              (items) => {
+                                const color = items[0]?.color ?? null;
+                                return (
+                                  <tr key={items[0]?.id ?? ''}>
+                                    <td>
+                                      <span
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          minHeight: `${items.length * VARIANT_ROW_H}rem`,
+                                        }}
+                                      >
+                                        <span>
+                                          <span
+                                            className="cart-dot"
+                                            style={{
+                                              backgroundColor: color?.hex_code ?? 'var(--border)',
+                                              display: 'inline-block',
+                                              marginRight: '.5rem',
+                                            }}
+                                            aria-hidden="true"
+                                          />
+                                          {color?.name ?? '?'}
+                                          <br />
+                                          <span style={{ color: 'var(--muted)', fontSize: 11 }}>
+                                            {color?.hex_code ?? ''}
+                                          </span>
+                                        </span>
+                                      </span>
+                                    </td>
+                                    <td>
+                                      {items.map((v) => (
+                                        <span key={v.id} style={variantLine}>
+                                          {v.size?.name ?? '?'}
+                                        </span>
+                                      ))}
+                                    </td>
+                                    <td>
+                                      {items.map((v) => (
+                                        <span
+                                          key={v.id}
+                                          style={{ ...variantLine, justifyContent: 'center' }}
+                                        >
+                                          <button
+                                            type="button"
+                                            className="admin-mini-btn danger"
+                                            onClick={() => askRemoveVariant(v.id)}
+                                            aria-label={`Delete variant ${v.color?.name} ${v.size?.name}`}
+                                          >
+                                            Delete
+                                          </button>
+                                        </span>
+                                      ))}
+                                    </td>
+                                  </tr>
+                                );
+                              }
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -1030,47 +1164,75 @@ export default function AdminProductsClient({
                 {pendingVariants.length > 0 ? (
                   <div className="admin-table-wrap" style={{ marginBottom: '.75rem' }}>
                     <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>Color</th>
-                          <th>Size</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pendingVariants.map((v) => (
-                          <tr key={`${v.colorId}:${v.sizeId}`}>
-                            <td>
-                              <span
-                                className="cart-dot"
-                                style={{
-                                  backgroundColor: v.hexCode,
-                                  display: 'inline-block',
-                                  marginRight: '.5rem',
-                                }}
-                                aria-hidden="true"
-                              />
-                              {v.colorName}
-                              <br />
-                              <span style={{ color: 'var(--muted)', fontSize: 11 }}>
-                                {v.hexCode}
-                              </span>
-                            </td>
-                            <td>{v.sizeName}</td>
-                            <td>
-                              <button
-                                type="button"
-                                className="admin-mini-btn danger"
-                                onClick={() =>
-                                  removePendingVariant(v.colorId, v.sizeId)
-                                }
-                              >
-                                Hapus
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
+                          <thead>
+                            <tr>
+                              <th>Color</th>
+                              <th>Size</th>
+                              <th style={{ textAlign: 'center' }}>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {groupInto(pendingVariants, (v) => v.colorId).map(
+                              (items) => (
+                                <tr key={items[0]?.colorId ?? ''}>
+                                  <td>
+                                    <span
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        minHeight: `${items.length * VARIANT_ROW_H}rem`,
+                                      }}
+                                    >
+                                      <span>
+                                        <span
+                                          className="cart-dot"
+                                          style={{
+                                            backgroundColor: items[0]?.hexCode,
+                                            display: 'inline-block',
+                                            marginRight: '.5rem',
+                                          }}
+                                          aria-hidden="true"
+                                        />
+                                        {items[0]?.colorName}
+                                        <br />
+                                        <span style={{ color: 'var(--muted)', fontSize: 11 }}>
+                                          {items[0]?.hexCode}
+                                        </span>
+                                      </span>
+                                    </span>
+                                  </td>
+                                  <td>
+                                    {items.map((v) => (
+                                      <span
+                                        key={`${v.colorId}:${v.sizeId}`}
+                                        style={variantLine}
+                                      >
+                                        {v.sizeName}
+                                      </span>
+                                    ))}
+                                  </td>
+                                  <td>
+                                    {items.map((v) => (
+                                      <span
+                                        key={`${v.colorId}:${v.sizeId}`}
+                                        style={{ ...variantLine, justifyContent: 'center' }}
+                                      >
+                                        <button
+                                          type="button"
+                                          className="admin-mini-btn danger"
+                                          onClick={() =>
+                                            removePendingVariant(v.colorId, v.sizeId)
+                                          }
+                                        >
+                                          Hapus
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
                     </table>
                   </div>
                 ) : (

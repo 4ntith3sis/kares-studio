@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import type { CSSProperties } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import { formatIDR } from '@/lib/utils/format';
 
@@ -13,6 +15,8 @@ interface StatsPayload {
     totalProducts: number;
     activeProducts: number;
     inactiveProducts: number;
+    availableProducts: number;
+    emptyProducts: number;
     totalCategories: number;
     totalVariants: number;
     totalStock: number;
@@ -34,18 +38,37 @@ interface StatsPayload {
 
 interface VariantRow {
   id: string;
-  product: { id: string; name: string; slug: string } | null;
+  product: { id: string; name: string; slug: string; price: number } | null;
+  categoryName: string;
   colorName: string;
   sizeName: string;
   stock: number;
+  imageUrl: string | null;
 }
+
+interface ProductGroup {
+  key: string;
+  product: { id: string; name: string; slug: string; price: number } | null;
+  categoryName: string;
+  imageUrl: string | null;
+  variants: VariantRow[];
+}
+
+const cellLine: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  minHeight: '1.9rem',
+};
 
 async function loadStats(): Promise<StatsPayload | null> {
   try {
     const base =
       process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    // Forward the admin session cookies so /api/admin/stats (requireAdmin)
+    // sees the same logged-in user as this page request.
     const res = await fetch(`${base.replace(/\/$/, '')}/api/admin/stats`, {
       cache: 'no-store',
+      headers: { cookie: cookies().toString() },
     });
     if (!res.ok) return null;
     return (await res.json()) as StatsPayload;
@@ -78,16 +101,73 @@ function StatCard({
   );
 }
 
-function VariantLine({ row }: { row: VariantRow }) {
+function ThinningRow({ group }: { group: ProductGroup }) {
+  // Varian dengan warna sama digabung: warna tampil sekali, ukuran bercabang.
+  const colorGroups: { color: string; items: VariantRow[] }[] = [];
+  for (const v of group.variants) {
+    const g = colorGroups.find((cg) => cg.color === v.colorName);
+    if (g) {
+      g.items.push(v);
+    } else {
+      colorGroups.push({ color: v.colorName, items: [v] });
+    }
+  }
   return (
-    <li>
-      <Link href={`/admin/inventory?product=${row.product?.slug ?? ''}`}>
-        {row.product?.name ?? 'Unknown product'}
-      </Link>
-      <span>
-        {row.colorName} / {row.sizeName} · Stock: {row.stock}
-      </span>
-    </li>
+    <tr>
+      <td>
+        <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
+          <span className="admin-thumb" aria-hidden="true">
+            {group.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={group.imageUrl} alt="" loading="lazy" />
+            ) : null}
+          </span>
+          <Link href={`/admin/inventory?product=${group.product?.slug ?? ''}`}>
+            {group.product?.name ?? 'Unknown product'}
+          </Link>
+        </div>
+      </td>
+      <td>{group.categoryName}</td>
+      <td>
+        {colorGroups.map((cg) => (
+          <span
+            key={cg.color}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              minHeight: `${cg.items.length * 1.9}rem`,
+            }}
+          >
+            {cg.color}
+          </span>
+        ))}
+      </td>
+      <td>
+        {group.variants.map((v) => (
+          <span key={v.id} style={cellLine}>
+            {v.sizeName}
+          </span>
+        ))}
+      </td>
+      <td>
+        {group.variants.map((v) => {
+          const empty = v.stock <= 0;
+          return (
+            <span key={v.id} style={cellLine}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: empty ? '#b3261e' : '#9a6700',
+                }}
+              >
+                {empty ? 'Habis' : `Sisa ${v.stock}`}
+              </span>
+            </span>
+          );
+        })}
+      </td>
+      <td>{group.product ? formatIDR(group.product.price) : '—'}</td>
+    </tr>
   );
 }
 
@@ -109,80 +189,58 @@ export default async function AdminDashboardPage() {
   }
 
   const { stats } = data;
+  const thinning = [...data.lowStockProducts, ...data.outOfStockProducts];
+  const grouped = new Map<string, ProductGroup>();
+  for (const r of thinning) {
+    const key = r.product?.id ?? r.id;
+    const g = grouped.get(key);
+    if (g) {
+      g.variants.push(r);
+    } else {
+      grouped.set(key, {
+        key,
+        product: r.product,
+        categoryName: r.categoryName,
+        imageUrl: r.imageUrl,
+        variants: [r],
+      });
+    }
+  }
+  const groups = Array.from(grouped.values());
   return (
     <AdminShell title="Dashboard">
       <div className="admin-stats">
-        <StatCard label="Total Product" value={stats.totalProducts} href="/admin/products" />
-        <StatCard label="Active" value={stats.activeProducts} href="/admin/products?status=active" />
-        <StatCard label="Inactive" value={stats.inactiveProducts} href="/admin/products?status=inactive" />
-        <StatCard label="Categories" value={stats.totalCategories} href="/admin/categories" />
-        <StatCard label="Variants" value={stats.totalVariants} href="/admin/inventory" />
-        <StatCard label="Total Stock" value={stats.totalStock} href="/admin/inventory" />
-        <StatCard label="Low Stock" value={stats.lowStock} href="/admin/inventory?status=low" />
-        <StatCard label="Out of Stock" value={stats.outOfStock} href="/admin/inventory?status=out" />
+        <StatCard label="Total Produk" value={stats.totalProducts} href="/admin/products" />
+        <StatCard label="Total Categories" value={stats.totalCategories} href="/admin/categories" />
+        <StatCard label="Produk Tersedia" value={stats.availableProducts} href="/admin/inventory" />
+        <StatCard label="Produk Habis" value={stats.emptyProducts} href="/admin/inventory?status=out" />
       </div>
 
-      <div className="admin-grid-2">
-        <section className="admin-panel" aria-label="Recent products">
-          <h2>Recent Products</h2>
-          {data.recentProducts.length === 0 ? (
-            <p className="admin-muted">Belum ada produk.</p>
-          ) : (
-            <ul className="admin-list">
-              {data.recentProducts.map((p) => (
-                <li key={p.id}>
-                  <Link href={`/admin/products?search=${encodeURIComponent(p.name)}`}>
-                    {p.name}
-                  </Link>
-                  <span>
-                    {formatIDR(p.price)} · {p.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="admin-panel" aria-label="Stock alerts">
-          <h2>Low Stock</h2>
-          {data.lowStockProducts.length === 0 ? (
-            <p className="admin-muted">Tidak ada low stock. 🎉</p>
-          ) : (
-            <ul className="admin-list">
-              {data.lowStockProducts.map((r) => (
-                <VariantLine key={r.id} row={r} />
-              ))}
-            </ul>
-          )}
-          <h2 style={{ marginTop: '1.5rem' }}>Out of Stock</h2>
-          {data.outOfStockProducts.length === 0 ? (
-            <p className="admin-muted">Tidak ada yang habis.</p>
-          ) : (
-            <ul className="admin-list">
-              {data.outOfStockProducts.map((r) => (
-                <VariantLine key={r.id} row={r} />
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-
-      <section className="admin-panel" aria-label="Quick actions">
-        <h2>Quick Actions</h2>
-        <div className="admin-actions">
-          <Link href="/admin/products?new=1" className="btn-primary">
-            Add Product
-          </Link>
-          <Link href="/admin/categories?new=1" className="btn-outline">
-            Add Category
-          </Link>
-          <Link href="/admin/inventory?action=in" className="btn-outline">
-            Stock In
-          </Link>
-          <Link href="/admin/cms" className="btn-outline">
-            Manage Homepage
-          </Link>
-        </div>
+      <section className="admin-panel" aria-label="Stok menipis">
+        <h2>Stok Menipis</h2>
+        {thinning.length === 0 ? (
+          <p className="admin-muted">Semua stok aman.</p>
+        ) : (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Produk</th>
+                  <th>Kategori</th>
+                  <th>Warna</th>
+                  <th>Ukuran</th>
+                  <th>Stok</th>
+                  <th>Harga</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groups.map((g) => (
+                  <ThinningRow key={g.key} group={g} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <p className="admin-note">

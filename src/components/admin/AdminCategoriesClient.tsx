@@ -1,7 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
+import ConfirmDialog, {
+  type ConfirmDialogData,
+} from '@/components/admin/ConfirmDialog';
 import { resolveImageUrlPublic } from '@/lib/images';
 
 interface CategoryRow {
@@ -16,18 +19,26 @@ interface CategoryRow {
 
 /**
  * Kares Studio — Admin Categories (client).
- * Create/rename/describe/image + guarded delete (409 when products
- * still reference the category).
+ * List + search/sort + create/rename/describe/image + guarded delete
+ * (409 when products still reference the category).
+ * Layout disamakan dengan Admin Products.
  */
+type SortKey = 'newest' | 'name-asc' | 'name-desc' | 'products';
+
 export default function AdminCategoriesClient({ showNew }: { showNew: boolean }) {
   const [rows, setRows] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortKey>('newest');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(showNew);
   const [form, setForm] = useState({ name: '', description: '', image_url: '' });
   const [editingSlug, setEditingSlug] = useState('');
+  const [confirm, setConfirm] = useState<
+    (ConfirmDialogData & { action: () => void }) | null
+  >(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -81,6 +92,31 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
     void load();
   }, [load]);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = rows.filter(
+      (c) => !q || `${c.name} ${c.slug}`.toLowerCase().includes(q)
+    );
+    const sorted = [...list];
+    switch (sort) {
+      case 'name-asc':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'name-desc':
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'products':
+        sorted.sort((a, b) => b.productCount - a.productCount);
+        break;
+      default:
+        sorted.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+    }
+    return sorted;
+  }, [rows, search, sort]);
+
   const openEdit = (c: CategoryRow) => {
     setEditingId(c.id);
     setCreating(false);
@@ -126,14 +162,17 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
     }
   };
 
+  const askRemove = (c: CategoryRow) => {
+    setConfirm({
+      title: 'Hapus Kategori?',
+      message: `Hapus kategori "${c.name}"? Diblokir bila masih dipakai ${c.productCount} produk.`,
+      confirmLabel: 'Ya, Hapus',
+      danger: true,
+      action: () => void remove(c),
+    });
+  };
+
   const remove = async (c: CategoryRow) => {
-    if (
-      !window.confirm(
-        `Hapus kategori "${c.name}"? Diblokir bila masih dipakai ${c.productCount} produk.`
-      )
-    ) {
-      return;
-    }
     try {
       const res = await fetch(
         `/api/admin/categories?id=${encodeURIComponent(c.id)}`,
@@ -150,7 +189,33 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
 
   return (
     <AdminShell title="Categories">
-      <div className="admin-toolbar">
+      <ConfirmDialog
+        dialog={confirm}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          const c = confirm;
+          setConfirm(null);
+          c?.action();
+        }}
+      />
+      <div className="admin-toolbar" role="search">
+        <input
+          type="search"
+          placeholder="Cari nama / slug…"
+          aria-label="Cari kategori"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          aria-label="Urutkan"
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+        >
+          <option value="newest">Terbaru</option>
+          <option value="name-asc">Nama A-Z</option>
+          <option value="name-desc">Nama Z-A</option>
+          <option value="products">Produk terbanyak</option>
+        </select>
         <button
           type="button"
           className="btn-primary"
@@ -176,23 +241,78 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
       ) : null}
 
       {(creating || editingId) && (
-        <section className="admin-panel admin-compact" aria-label="Category form">
-          <h2>{editingId ? 'Edit Category' : 'Add Category'}</h2>
-          <div className="admin-form admin-form-compact">
-            <div className="admin-edit-grid">
-              <div className="admin-edit-thumb">
-                {form.image_url && previewUrl(form.image_url) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={previewUrl(form.image_url) as string}
-                    alt="Category preview"
-                    loading="lazy"
-                  />
-                ) : (
-                  <span className="admin-edit-thumb-empty">No image</span>
-                )}
-                <label className="admin-mini-btn">
-                  {uploading ? 'Uploading…' : 'Change'}
+        <section className="admin-panel" aria-label={editingId ? 'Edit category' : 'Add category'}>
+          <h2>{editingId ? `Edit — ${form.name || 'Category'}` : 'Add Category'}</h2>
+          <div className="admin-form">
+            <h3 className="admin-section-title">A. Category Information</h3>
+            <label>
+              <span>Name *</span>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Outerwear"
+              />
+            </label>
+            <label>
+              <span>Slug</span>
+              <input
+                type="text"
+                value={editingSlug}
+                readOnly
+                disabled
+                placeholder="auto dari nama"
+              />
+            </label>
+            <label>
+              <span>Description</span>
+              <textarea
+                rows={3}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </label>
+            <h3 className="admin-section-title">B. Category Image</h3>
+            <div>
+              <span
+                style={{
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: 10,
+                  letterSpacing: '.15em',
+                  textTransform: 'uppercase',
+                  color: 'var(--muted)',
+                  display: 'block',
+                  marginBottom: '.5rem',
+                }}
+              >
+                Category Image
+              </span>
+              <div className="admin-img-row">
+                <div className="admin-img-cell">
+                  {form.image_url && previewUrl(form.image_url) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={previewUrl(form.image_url) as string}
+                      alt="Category preview"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span
+                      className="admin-edit-thumb-empty"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        textAlign: 'center',
+                      }}
+                    >
+                      No image
+                    </span>
+                  )}
+                </div>
+                <label className="admin-mini-btn" style={{ alignSelf: 'center' }}>
+                  {uploading ? 'Uploading…' : 'Ganti Gambar'}
                   <input
                     type="file"
                     accept="image/*"
@@ -206,47 +326,16 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
                   />
                 </label>
               </div>
-              <div className="admin-edit-fields">
-                <label>
-                  <span>Name *</span>
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Outerwear"
-                  />
-                </label>
-                <label>
-                  <span>Slug</span>
-                  <input
-                    type="text"
-                    value={editingSlug}
-                    readOnly
-                    disabled
-                    placeholder="auto dari nama"
-                  />
-                </label>
-                <label>
-                  <span>Description</span>
-                  <textarea
-                    rows={2}
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  />
-                </label>
-                <label className="admin-check">
-                  <input
-                    type="checkbox"
-                    checked
-                    readOnly
-                    disabled
-                    aria-label="Active (always on)"
-                  />
-                  <span>Active</span>
-                </label>
-              </div>
             </div>
-            <div className="admin-actions admin-actions-compact">
+            <div className="admin-actions">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void submit()}
+                disabled={saving}
+              >
+                {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Create Category'}
+              </button>
               <button
                 type="button"
                 className="btn-outline"
@@ -257,14 +346,6 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => void submit()}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
             </div>
           </div>
         </section>
@@ -274,7 +355,6 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Image</th>
               <th>Category</th>
               <th>Description</th>
               <th>Products</th>
@@ -284,33 +364,35 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5}>Memuat kategori...</td>
+                <td colSpan={4}>Memuat kategori…</td>
               </tr>
-            ) : rows.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5}>Belum ada kategori.</td>
+                <td colSpan={4}>Tidak ada kategori yang cocok.</td>
               </tr>
             ) : (
-              rows.map((c) => (
+              filtered.map((c) => (
                 <tr key={c.id}>
                   <td>
-                    <span className="admin-thumb-cat" aria-hidden="true">
-                      {previewUrl(c.image_url ?? '') ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={previewUrl(c.image_url ?? '') as string}
-                          alt=""
-                          loading="lazy"
-                        />
-                      ) : null}
-                    </span>
-                  </td>
-                  <td>
-                    <strong>{c.name}</strong>
-                    <br />
-                    <span style={{ color: 'var(--muted)', fontSize: 11 }}>
-                      /{c.slug}
-                    </span>
+                    <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
+                      <span className="admin-thumb" aria-hidden="true">
+                        {previewUrl(c.image_url ?? '') ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={previewUrl(c.image_url ?? '') as string}
+                            alt=""
+                            loading="lazy"
+                          />
+                        ) : null}
+                      </span>
+                      <span>
+                        <strong>{c.name}</strong>
+                        <br />
+                        <span style={{ color: 'var(--muted)', fontSize: 11 }}>
+                          /{c.slug}
+                        </span>
+                      </span>
+                    </div>
                   </td>
                   <td style={{ maxWidth: '24rem' }}>{c.description ?? '—'}</td>
                   <td>{c.productCount}</td>
@@ -326,7 +408,7 @@ export default function AdminCategoriesClient({ showNew }: { showNew: boolean })
                       <button
                         type="button"
                         className="admin-mini-btn danger"
-                        onClick={() => void remove(c)}
+                        onClick={() => askRemove(c)}
                       >
                         Hapus
                       </button>

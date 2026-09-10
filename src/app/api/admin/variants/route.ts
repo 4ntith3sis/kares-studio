@@ -10,8 +10,10 @@ import { revalidateStorefront } from '@/lib/revalidate';
  *
  * GET ?product_id=: variants + stock per variant (0 = belum pernah IN).
  * POST { product_id, color_id, size_id }: create (409 bila duplicate).
- * DELETE ?id=: hapus variant bila TANPA transaksi; bila ADA transaksi,
- *   409 (history dilindungi FK) — hapus transaksi dulu bila memang perlu.
+ * DELETE ?id= [&confirm=1]: two-step seperti hapus produk. Tanpa
+ *   confirm dan variant punya transaksi → 409 + jumlah transaksi (tidak
+ *   ada yang dihapus). Dengan confirm=1 → hapus transaksi riwayat variant
+ *   tersebut lalu hapus variant.
  */
 function bad(msg: string, status = 400) {
   return NextResponse.json({ error: msg }, { status });
@@ -111,6 +113,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
+  const confirm = searchParams.get('confirm');
   if (!id) return bad('Variant id is required.');
   try {
     const gate = await requireAdmin();
@@ -120,13 +123,26 @@ export async function DELETE(req: Request) {
       .from('inventory_transactions')
       .select('id', { count: 'exact', head: true })
       .eq('variant_id', id);
-    if ((count ?? 0) > 0) {
+    const txCount = count ?? 0;
+    // Step 1 (tanpa confirm): laporkan dampak, jangan hapus apa pun bila
+    // variant masih punya riwayat transaksi.
+    if (txCount > 0 && confirm !== '1') {
       return NextResponse.json(
         {
-          error: `Variant memiliki ${count} transaksi inventory. History dilindungi — hapus transaksi terlebih dahulu bila memang perlu.`,
+          error: `Variant memiliki ${txCount} transaksi inventory.`,
+          transactions: txCount,
         },
         { status: 409 }
       );
+    }
+    // Step 2 (confirm=1): hapus riwayat transaksi variant ini dulu, lalu
+    // hapus variant.
+    if (txCount > 0) {
+      const { error: txError } = await supabase
+        .from('inventory_transactions')
+        .delete()
+        .eq('variant_id', id);
+      if (txError) throw txError;
     }
     const { error } = await supabase
       .from('product_variants')
@@ -134,7 +150,7 @@ export async function DELETE(req: Request) {
       .eq('id', id);
     if (error) throw error;
     revalidateStorefront(['/collection', '/', 'product']);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, deletedTransactions: txCount });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Delete failed.';
     return NextResponse.json({ error: message }, { status: 500 });

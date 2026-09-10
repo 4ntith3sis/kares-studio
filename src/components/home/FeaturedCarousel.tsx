@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import CardImage from './CardImage';
+import ProductHoverGallery from './ProductHoverGallery';
 import { formatIDR } from '@/lib/utils/format';
 import { cmsText } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
@@ -153,7 +154,14 @@ export default function FeaturedCarousel({ products, cms = {} }: Props) {
               New arrivals are being curated — check back soon.
             </p>
           ) : (
-            products.map((p) => (
+            products.map((p) => {
+              const gallery =
+                p.gallery.length > 0
+                  ? p.gallery
+                  : p.imageSrc
+                    ? [p.imageSrc]
+                    : [];
+              return (
               <Link
                 href={`/product/${p.slug}`}
                 className="prod-card"
@@ -161,9 +169,14 @@ export default function FeaturedCarousel({ products, cms = {} }: Props) {
                 aria-label={`View ${p.name}`}
               >
                 <div className="prod-img">
-                  {p.imageSrc ? (
+                  {gallery.length > 1 ? (
+                    <ProductHoverGallery
+                      images={gallery}
+                      alt={`Kares Studio ${p.name}`}
+                    />
+                  ) : gallery.length === 1 ? (
                     <CardImage
-                      src={p.imageSrc}
+                      src={gallery[0]}
                       alt={`Kares Studio ${p.name}`}
                     />
                   ) : (
@@ -175,7 +188,8 @@ export default function FeaturedCarousel({ products, cms = {} }: Props) {
                   <p className="prod-price">{formatIDR(p.price)}</p>
                 </div>
               </Link>
-            ))
+              );
+            })
           )}
 
           <div className="view-all-card">

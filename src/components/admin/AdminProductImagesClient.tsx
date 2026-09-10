@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
+import ConfirmDialog, {
+  type ConfirmDialogData,
+} from '@/components/admin/ConfirmDialog';
 
 interface Img {
   id: string;
@@ -29,6 +32,9 @@ export default function AdminProductImagesClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [confirm, setConfirm] = useState<
+    (ConfirmDialogData & { action: () => void }) | null
+  >(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,7 +80,6 @@ export default function AdminProductImagesClient({
   };
 
   const remove = async (id: string) => {
-    if (!window.confirm('Hapus gambar ini?')) return;
     try {
       const res = await fetch(`/api/admin/images?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
@@ -85,6 +90,16 @@ export default function AdminProductImagesClient({
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Hapus gagal.');
     }
+  };
+
+  const askRemove = (id: string, index: number) => {
+    setConfirm({
+      title: 'Hapus Gambar?',
+      message: `Gambar #${index + 1} akan dihapus permanen dari produk ini.`,
+      confirmLabel: 'Ya, Hapus',
+      danger: true,
+      action: () => void remove(id),
+    });
   };
 
   const move = async (index: number, dir: -1 | 1) => {
@@ -110,6 +125,15 @@ export default function AdminProductImagesClient({
 
   return (
     <AdminShell title="Product Images">
+      <ConfirmDialog
+        dialog={confirm}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          const c = confirm;
+          setConfirm(null);
+          c?.action();
+        }}
+      />
       <label className="admin-mini-btn" style={{ width: 'fit-content' }}>
         {uploading ? 'Uploading…' : '+ Upload Image (≤5MB)'}
         <input
@@ -139,7 +163,7 @@ export default function AdminProductImagesClient({
             <div key={img.id} className="admin-img-cell" title={`#${img.sort_order} ${img.image_url}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={publicUrl(img.image_url)} alt={`Product image ${i + 1}`} loading="lazy" />
-              <button type="button" onClick={() => void remove(img.id)} aria-label={`Delete image ${i + 1}`}>
+              <button type="button" onClick={() => askRemove(img.id, i)} aria-label={`Delete image ${i + 1}`}>
                 ×
               </button>
               <div style={{ position: 'absolute', bottom: '.25rem', left: '.25rem', display: 'flex', gap: '.25rem' }}>

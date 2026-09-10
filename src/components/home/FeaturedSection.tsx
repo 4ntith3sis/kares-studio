@@ -45,7 +45,10 @@ const FALLBACK_RAW = [
 ];
 
 export const FALLBACK_FEATURED: HomepageFeaturedProduct[] = FALLBACK_RAW.map(
-  ({ image, ...p }) => ({ ...p, imageSrc: resolveImageUrl(image) })
+  ({ image, ...p }) => {
+    const imageSrc = resolveImageUrl(image);
+    return { ...p, imageSrc, gallery: imageSrc ? [imageSrc] : [] };
+  }
 );
 
 /**

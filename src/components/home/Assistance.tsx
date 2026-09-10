@@ -103,15 +103,14 @@ export default function Assistance({
                   />
                 </div>
                 <div className="asst-label-below">
-                  <span className="handle">@kares.studio</span>
-                  <span className="prod-tag">Jacket — Momento</span>
+                  <span className="moment-mark" aria-hidden="true">✳</span>
+                  <span className="handle">[Wear the Moment]</span>
                 </div>
               </div>
 
               <div className="asst-photo-col right">
                 <div className="asst-label-above">
-                  <span className="tag-dot" />
-                  <span>[SS26 // NEW LOOK]</span>
+                  <span>From timeless classics to bold statement pieces, our collections are thoughtfully.</span>
                 </div>
                 <div className="asst-img-wrap offset-bottom">
                   <CardImage
@@ -119,7 +118,6 @@ export default function Assistance({
                     alt="Kares Studio look 02"
                     position="center 20%"
                   />
-                  <div className="star-corner">✹</div>
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import { stockStatusOf, STOCK_STATUS_LABEL } from '@/lib/admin';
 
@@ -14,12 +15,52 @@ interface InvRow {
   stock: number;
 }
 
+interface HistRow {
+  id: string;
+  type: string;
+  quantity: number;
+  note: string | null;
+  created_at: string;
+  productName: string;
+  variantLabel: string;
+}
+
 /**
  * Kares Studio — Admin Inventory (client).
  * Variant matrix + stock status (single threshold helper) + IN/OUT
  * transactions via /api/admin/inventory. Search/filter by product,
- * color, size, status.
+ * color, size, status. Rows with the same product + color are grouped
+ * so sizes branch beneath one color.
  */
+const INV_ROW_H = 2.5; // rem — shared rhythm so branched cells align
+const invLine: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  minHeight: `${INV_ROW_H}rem`,
+};
+
+function groupInvRows(list: InvRow[]): InvRow[][] {
+  const groups: { key: string; items: InvRow[] }[] = [];
+  for (const item of list) {
+    const key = item.product?.id ?? item.id;
+    const g = groups.find((x) => x.key === key);
+    if (g) g.items.push(item);
+    else groups.push({ key, items: [item] });
+  }
+  return groups.map((g) => g.items);
+}
+
+/** Di dalam satu produk: kelompokkan varian per warna (ukuran bercabang). */
+function groupByColor(items: InvRow[]): InvRow[][] {
+  const groups: { key: string; items: InvRow[] }[] = [];
+  for (const item of items) {
+    const key = item.color?.id ?? item.id;
+    const g = groups.find((x) => x.key === key);
+    if (g) g.items.push(item);
+    else groups.push({ key, items: [item] });
+  }
+  return groups.map((g) => g.items);
+}
 export default function AdminInventoryClient({
   initialStatus,
   initialProduct,
@@ -39,13 +80,78 @@ export default function AdminInventoryClient({
   const [colorFilter, setColorFilter] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
 
-  const [variantId, setVariantId] = useState('');
-  const [type, setType] = useState<'in' | 'out'>(
-    initialAction === 'out' ? 'out' : 'in'
-  );
+  // Transaksi dikelola per grup produk+warna: 1 status + 1 tombol aksi
+  // per grup, sejajar di tengah baris. Ukuran dipilih di dalam modal.
+  const [managing, setManaging] = useState<InvRow[] | null>(null);
+  const [manageVariantId, setManageVariantId] = useState('');
+  const [modalType, setModalType] = useState<'in' | 'out'>('in');
   const [quantity, setQuantity] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<HistRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch('/api/admin/inventory?history=1', {
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Gagal memuat riwayat.');
+      setHistory(data.history ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal memuat riwayat.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  const toggleHistory = () => {
+    if (!showHistory && history.length === 0) void loadHistory();
+    setShowHistory((v) => !v);
+  };
+
+  const openManage = (items: InvRow[]) => {
+    setManaging(items);
+    setManageVariantId(items[0]?.id ?? '');
+    setModalType('in');
+    setQuantity('');
+    setNote('');
+    setError(null);
+    setNotice(null);
+  };
+
+  const closeManage = () => {
+    setManaging(null);
+    setManageVariantId('');
+    setQuantity('');
+    setNote('');
+  };
+
+  const selected =
+    managing?.find((r) => r.id === manageVariantId) ?? managing?.[0] ?? null;
+
+  // Tutup modal dengan Escape.
+  useEffect(() => {
+    if (!managing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeManage();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [managing]);
+
+  const estimate = (() => {
+    if (!selected) return 0;
+    const qty = Number(quantity);
+    if (!Number.isInteger(qty) || qty <= 0) return selected.stock;
+    return modalType === 'in'
+      ? selected.stock + qty
+      : selected.stock - qty;
+  })();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,13 +210,16 @@ export default function AdminInventoryClient({
   }, [rows, search, status, colorFilter, sizeFilter]);
 
   const submitTxn = async () => {
+    if (!selected) return;
     const qty = Number(quantity);
-    if (!variantId) {
-      setError('Pilih variant terlebih dahulu.');
-      return;
-    }
     if (!Number.isInteger(qty) || qty <= 0) {
       setError('Quantity harus integer > 0.');
+      return;
+    }
+    if (modalType === 'out' && qty > selected.stock) {
+      setError(
+        `Stock tidak cukup (sisa ${selected.stock}).`
+      );
       return;
     }
     setSaving(true);
@@ -121,8 +230,8 @@ export default function AdminInventoryClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          variant_id: variantId,
-          type,
+          variant_id: selected.id,
+          type: modalType,
           quantity: qty,
           note: note.trim() || null,
         }),
@@ -130,11 +239,11 @@ export default function AdminInventoryClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Transaksi gagal.');
       setNotice(
-        `Stock ${type === 'in' ? 'IN' : 'OUT'} ${qty} berhasil dicatat.`
+        `Stock ${modalType === 'in' ? 'IN' : 'OUT'} ${qty} berhasil dicatat untuk ${selected.product?.name ?? 'variant'} (${selected.color?.name ?? '?'} / ${selected.size?.name ?? '?'}).`
       );
-      setQuantity('');
-      setNote('');
+      closeManage();
       await load();
+      if (showHistory || history.length > 0) await loadHistory();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Transaksi gagal.');
     } finally {
@@ -144,68 +253,6 @@ export default function AdminInventoryClient({
 
   return (
     <AdminShell title="Inventory">
-      <section className="admin-panel" aria-label="Stock transaction">
-        <h2>Stock {type === 'in' ? 'In' : 'Out'}</h2>
-        <div className="admin-form">
-          <label>
-            <span>Variant (Product — Color / Size — Stock)</span>
-            <select
-              value={variantId}
-              onChange={(e) => setVariantId(e.target.value)}
-            >
-              <option value="">— Pilih variant —</option>
-              {rows.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.product?.name ?? '?'} — {r.color?.name ?? '?'} /{' '}
-                  {r.size?.name ?? '?'} — Stock {r.stock}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Type</span>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as 'in' | 'out')}
-            >
-              <option value="in">IN (tambah stok)</option>
-              <option value="out">OUT (kurangi stok)</option>
-            </select>
-          </label>
-          <label>
-            <span>Quantity *</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={quantity}
-              onChange={(e) =>
-                setQuantity(e.target.value.replace(/[^0-9]/g, ''))
-              }
-              placeholder="10"
-            />
-          </label>
-          <label>
-            <span>Note</span>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Restock / retur / koreksi…"
-            />
-          </label>
-          <div className="admin-actions">
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => void submitTxn()}
-              disabled={saving}
-            >
-              {saving ? 'Saving…' : `Record ${type === 'in' ? 'IN' : 'OUT'}`}
-            </button>
-          </div>
-        </div>
-      </section>
-
       {error ? (
         <p className="admin-error" role="alert">
           {error}
@@ -259,51 +306,307 @@ export default function AdminInventoryClient({
           <option value="low">LOW STOCK</option>
           <option value="out">OUT OF STOCK</option>
         </select>
+        <button type="button" className="btn-outline" onClick={toggleHistory}>
+          {showHistory ? 'Kembali ke Stok' : 'History'}
+        </button>
       </div>
 
+      {showHistory ? (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Produk</th>
+                <th>Varian</th>
+                <th>Jenis</th>
+                <th>Jumlah</th>
+                <th>Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historyLoading ? (
+                <tr>
+                  <td colSpan={6}>Memuat riwayat…</td>
+                </tr>
+              ) : history.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>Belum ada catatan penambahan/pengurangan.</td>
+                </tr>
+              ) : (
+                history.map((h) => (
+                  <tr key={h.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {new Date(h.created_at).toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td>{h.productName}</td>
+                    <td>{h.variantLabel}</td>
+                    <td>
+                      <span className={`admin-pill ${h.type === 'in' ? 'in' : 'out'}`}>
+                        {h.type === 'in' ? 'Penambahan' : 'Pengurangan'}
+                      </span>
+                    </td>
+                    <td>
+                      {h.type === 'in' ? '+' : '-'}{h.quantity}
+                    </td>
+                    <td style={{ maxWidth: '20rem' }}>{h.note ?? '—'}</td>
+                </tr>
+              )))
+            }
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="admin-table-wrap">
         <table className="admin-table">
           <thead>
-            <tr>
-              <th>Product</th>
-              <th>Color</th>
-              <th>Size</th>
-              <th>Stock</th>
-              <th>Status</th>
-            </tr>
+                <tr>
+                  <th>Product</th>
+                  <th>Color</th>
+                  <th>Size</th>
+                  <th>Stock</th>
+                  <th style={{ textAlign: 'center' }}>Status</th>
+                  <th style={{ textAlign: 'center' }}>Action</th>
+                </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5}>Memuat inventory…</td>
+                <td colSpan={6}>Memuat inventory…</td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5}>Tidak ada variant yang cocok.</td>
+                <td colSpan={6}>Tidak ada variant yang cocok.</td>
               </tr>
             ) : (
-              filtered.map((r) => {
-                const s = stockStatusOf(r.stock);
+              groupInvRows(filtered).map((items) => {
+                const colorGroups = groupByColor(items);
                 return (
-                  <tr key={r.id}>
-                    <td>{r.product?.name ?? '—'}</td>
-                    <td>{r.color?.name ?? '—'}</td>
-                    <td>{r.size?.name ?? '—'}</td>
-                    <td>
-                      {r.stock} <span style={{ color: 'var(--muted)' }}>(in {r.total_in} / out {r.total_out})</span>
-                    </td>
-                    <td>
-                      <span className={`admin-pill ${s}`}>
-                        {STOCK_STATUS_LABEL[s]}
+                <tr key={items[0]?.id ?? ''}>
+                  <td>
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        minHeight: `${items.length * INV_ROW_H}rem`,
+                      }}
+                    >
+                      {items[0]?.product?.name ?? '—'}
+                    </span>
+                  </td>
+                  <td>
+                    {colorGroups.map((cg) => (
+                      <span
+                        key={cg[0]?.id ?? ''}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          minHeight: `${cg.length * INV_ROW_H}rem`,
+                        }}
+                      >
+                        {cg[0]?.color?.name ?? '—'}
                       </span>
-                    </td>
-                  </tr>
+                    ))}
+                  </td>
+                  <td>
+                    {items.map((r) => (
+                      <span key={r.id} style={invLine}>
+                        {r.size?.name ?? '—'}
+                      </span>
+                    ))}
+                  </td>
+                  <td>
+                    {items.map((r) => (
+                      <span key={r.id} style={invLine}>
+                        {r.stock}
+                      </span>
+                    ))}
+                  </td>
+                  <td>
+                    {items.map((r) => {
+                      const s = stockStatusOf(r.stock);
+                      return (
+                        <span
+                          key={r.id}
+                          style={{ ...invLine, justifyContent: 'center' }}
+                        >
+                          <span className={`admin-pill ${s}`}>
+                            {STOCK_STATUS_LABEL[s]}
+                          </span>
+                        </span>
+                      );
+                    })}
+                  </td>
+                  <td>
+                    {items.map((r) => (
+                      <span
+                        key={r.id}
+                        style={{ ...invLine, justifyContent: 'center' }}
+                      >
+                        <div
+                          className="admin-row-actions"
+                          style={{ justifyContent: 'center' }}
+                        >
+                          <button
+                            type="button"
+                            className="admin-mini-btn"
+                            onClick={() => openManage([r])}
+                          >
+                            Kelola Stok
+                          </button>
+                        </div>
+                      </span>
+                    ))}
+                  </td>
+                </tr>
                 );
               })
             )}
           </tbody>
         </table>
       </div>
+      )}
+
+      {managing && selected ? (
+        <div
+          className="modal-overlay"
+          onClick={closeManage}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Kelola stok"
+        >
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div>
+                <h2>Kelola Stok</h2>
+                <p className="admin-muted">
+                  {selected.product?.name ?? 'Variant'} —{' '}
+                  {selected.color?.name ?? '?'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={closeManage}
+                aria-label="Tutup"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-stock-box">
+              <div>
+                <span>Stok saat ini</span>
+                <strong>{selected.stock}</strong>
+              </div>
+              <div>
+                <span>Estimasi stok baru</span>
+                <strong>{estimate}</strong>
+              </div>
+            </div>
+            <div className="admin-form">
+              {managing.length > 1 ? (
+                <label>
+                  <span>Ukuran</span>
+                  <select
+                    value={manageVariantId}
+                    onChange={(e) => {
+                      setManageVariantId(e.target.value);
+                      setModalType('in');
+                      setQuantity('');
+                    }}
+                  >
+                    {managing.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.size?.name ?? '?'} — Stok {r.stock}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className="admin-muted">
+                  Ukuran: {selected.size?.name ?? '?'}
+                </p>
+              )}
+              <span
+                style={{
+                  fontFamily: "'DM Mono',monospace",
+                  fontSize: 10,
+                  letterSpacing: '.15em',
+                  textTransform: 'uppercase',
+                  color: 'var(--muted)',
+                }}
+              >
+                Jenis perubahan
+              </span>
+              <div className="modal-type-row" role="group" aria-label="Jenis perubahan">
+                <button
+                  type="button"
+                  className={`modal-type-btn${modalType === 'in' ? ' active' : ''}`}
+                  onClick={() => setModalType('in')}
+                  aria-pressed={modalType === 'in'}
+                >
+                  ↗ Stock In
+                </button>
+                <button
+                  type="button"
+                  className={`modal-type-btn${modalType === 'out' ? ' active' : ''}`}
+                  onClick={() => setModalType('out')}
+                  aria-pressed={modalType === 'out'}
+                  disabled={selected.stock <= 0}
+                  title={selected.stock <= 0 ? 'Stok habis' : 'Kurangi stok'}
+                >
+                  ↘ Stock Out
+                </button>
+              </div>
+              <label>
+                <span>Jumlah *</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoFocus
+                  value={quantity}
+                  onChange={(e) =>
+                    setQuantity(e.target.value.replace(/[^0-9]/g, ''))
+                  }
+                  placeholder="Contoh: 10"
+                />
+              </label>
+              <label>
+                <span>Catatan (opsional)</span>
+                <input
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Contoh: Restock gudang, retur…"
+                />
+              </label>
+            </div>
+            <div className="modal-foot">
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={closeManage}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void submitTxn()}
+                disabled={saving}
+              >
+                {saving ? 'Menyimpan…' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AdminShell>
   );
 }

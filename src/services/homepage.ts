@@ -11,7 +11,7 @@ export type HomepageCategory = Category & {
   imageSrc: string | null;
 };
 
-/** Homepage featured product card: DB fields + primary image + category. */
+/** Homepage featured product card: DB fields + images + category. */
 export type HomepageFeaturedProduct = Pick<
   Product,
   'id' | 'name' | 'slug' | 'price' | 'featured'
@@ -19,6 +19,8 @@ export type HomepageFeaturedProduct = Pick<
   categoryName: string | null;
   /** Primary image URL (lowest sort_order) or null when product has no image. */
   imageSrc: string | null;
+  /** All product image URLs (primary first) for hover slideshow. */
+  gallery: string[];
 };
 
 function pad2(n: number): string {
@@ -120,15 +122,25 @@ export async function getHomepageFeaturedProducts(): Promise<HomepageFeaturedPro
   if (imgError) throw imgError;
 
   const primaryByProduct = new Map<string, string>();
+  const galleryByProduct = new Map<string, string[]>();
   for (const img of (images ?? []) as {
     product_id: string;
     image_url: string | null;
     sort_order: number;
   }[]) {
-    if (!primaryByProduct.has(img.product_id) && img.image_url) {
+    if (!img.image_url) continue;
+    if (!primaryByProduct.has(img.product_id)) {
       primaryByProduct.set(img.product_id, img.image_url);
     }
+    const g = galleryByProduct.get(img.product_id) ?? [];
+    g.push(img.image_url);
+    galleryByProduct.set(img.product_id, g);
   }
+
+  const resolveAll = (paths: string[] | undefined): string[] =>
+    (paths ?? []).map((p) => resolveImageUrl(p)).filter(
+      (u): u is string => u !== null
+    );
 
   return list.map((p) => ({
     id: p.id,
@@ -138,5 +150,6 @@ export async function getHomepageFeaturedProducts(): Promise<HomepageFeaturedPro
     featured: p.featured,
     categoryName: normCategory(p.category)?.name ?? null,
     imageSrc: resolveImageUrl(primaryByProduct.get(p.id) ?? null),
+    gallery: resolveAll(galleryByProduct.get(p.id)),
   }));
 }

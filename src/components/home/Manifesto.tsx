@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { cmsText } from '@/services/cms';
+import CardImage from './CardImage';
+import { cmsImageUrl, cmsText } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
 
 /** CMS overlay only — markup/styles identical to the final design. */
@@ -10,6 +11,15 @@ export default function Manifesto({ cms = {} }: { cms?: HomepageCmsMap }) {
     'heading',
     'At KARES STUDIO, we believe fashion is more than just clothing\u2014it\u2019s an expression of who you are in every moment.'
   );
+  // Inline landscape photo card rendered right after the word "just".
+  // CMS key `manifesto.swatches/swatch_image` fills it; empty CMS shows the
+  // placeholder card (same cut) until a photo is wired.
+  const swatchSrc = cmsImageUrl(cms, 'manifesto', 'swatch_image', '');
+  const justMatch = heading.match(/\bjust\b/i);
+  const justEnd =
+    justMatch && justMatch.index !== undefined
+      ? justMatch.index + justMatch[0].length
+      : -1;
   return (
     <section id="manifesto">
       <div className="container-main mani-inner">
@@ -18,7 +28,23 @@ export default function Manifesto({ cms = {} }: { cms?: HomepageCmsMap }) {
           <span className="label">[OUR PHILOSOPHY]</span>
         </div>
 
-        <h2 className="mani-cms-heading">{heading}</h2>
+        <h2 className="mani-cms-heading">
+          {justEnd === -1 ? (
+            heading
+          ) : (
+            <>
+              {heading.slice(0, justEnd)}{' '}
+              <span className="swatch" role="img" aria-label="Kares Studio fabric detail">
+                <CardImage
+                  src={swatchSrc}
+                  alt="Kares Studio fabric detail"
+                  position="center 20%"
+                />
+              </span>{' '}
+              {heading.slice(justEnd).trimStart()}
+            </>
+          )}
+        </h2>
 
         <div className="mani-cta">
           <Link href="/about" className="btn-outline">

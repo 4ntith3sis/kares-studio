@@ -49,7 +49,7 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
                 fontFamily: "'DM Mono',monospace",
                 fontSize: 12,
                 textTransform: 'uppercase',
-                border: '1px solid rgba(216,213,207,.6)',
+                border: '1px solid rgba(229,229,229,.9)',
                 padding: '.25rem .75rem',
                 borderRadius: 9999,
               }}

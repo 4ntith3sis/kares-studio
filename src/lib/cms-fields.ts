@@ -13,6 +13,8 @@ export interface CmsField {
   label: string;
   type: CmsFieldType;
   hint?: string;
+  /** Orientasi thumbnail preview mengikuti pemakaian di homepage. */
+  ratio?: 'portrait' | 'landscape';
 }
 
 export interface CmsSection {
@@ -32,7 +34,7 @@ export const CMS_SECTIONS: CmsSection[] = [
       { section: 'hero', key: 'heading', label: 'Heading (| = baris baru)', type: 'text' },
       { section: 'hero', key: 'description', label: 'Description', type: 'textarea' },
       { section: 'hero', key: 'button_text', label: 'Button Text', type: 'text' },
-      { section: 'hero', key: 'image', label: 'Hero Image', type: 'image', hint: 'Object path Storage / URL / path lokal' },
+      { section: 'hero', key: 'image', label: 'Hero Image', type: 'image', ratio: 'portrait', hint: 'Object path Storage / URL / path lokal' },
       { section: 'hero', key: 'tagline', label: 'Tagline', type: 'text' },
     ],
   },
@@ -45,8 +47,8 @@ export const CMS_SECTIONS: CmsSection[] = [
       { section: 'brand_statement', key: 'right_label', label: 'Right Label', type: 'text' },
       { section: 'brand_statement', key: 'badge', label: 'Badge', type: 'text' },
       { section: 'brand_statement', key: 'quote', label: 'Quote', type: 'textarea' },
-      { section: 'brand_statement', key: 'image_left', label: 'Image Left', type: 'image', hint: 'Object path Storage (cms/...) / URL' },
-      { section: 'brand_statement', key: 'image_right', label: 'Image Right', type: 'image', hint: 'Object path Storage (cms/...) / URL' },
+      { section: 'brand_statement', key: 'image_left', label: 'Image Left', type: 'image', ratio: 'landscape', hint: 'Object path Storage (cms/...) / URL' },
+      { section: 'brand_statement', key: 'image_right', label: 'Image Right', type: 'image', ratio: 'portrait', hint: 'Object path Storage (cms/...) / URL' },
     ],
   },
   {
@@ -72,14 +74,17 @@ export const CMS_SECTIONS: CmsSection[] = [
     fields: [
       { section: 'quality', key: 'tag', label: 'Tag', type: 'text' },
       { section: 'quality', key: 'quote', label: 'Quote', type: 'textarea' },
-      { section: 'quality', key: 'image', label: 'Image', type: 'image' },
+      { section: 'quality', key: 'image', label: 'Image', type: 'image', ratio: 'portrait' },
     ],
   },
   {
     id: 'manifesto',
     title: 'Manifesto',
-    description: 'Teks manifesto (teks polos, tanpa dekorasi manual).',
-    fields: [{ section: 'manifesto', key: 'heading', label: 'Heading', type: 'textarea' }],
+    description: 'Teks manifesto (teks polos, tanpa dekorasi manual) dan foto card inline setelah kata "just".',
+    fields: [
+      { section: 'manifesto', key: 'heading', label: 'Heading', type: 'textarea' },
+      { section: 'manifesto', key: 'swatch_image', label: 'Inline Card Image (setelah kata "just")', type: 'image', ratio: 'landscape', hint: 'Foto landscape kecil di dalam heading. Object path Storage (cms/...) / URL' },
+    ],
   },
   {
     id: 'assistance',
@@ -89,8 +94,8 @@ export const CMS_SECTIONS: CmsSection[] = [
       { section: 'assistance', key: 'tag', label: 'Topbar Tag', type: 'text' },
       { section: 'assistance', key: 'description', label: 'Description', type: 'textarea' },
       { section: 'assistance', key: 'button_text', label: 'Button Text', type: 'text' },
-      { section: 'assistance', key: 'image_1', label: 'Assistance Image 1', type: 'image', hint: 'Object path Storage (static/assistance/...) / URL' },
-      { section: 'assistance', key: 'image_2', label: 'Assistance Image 2', type: 'image', hint: 'Object path Storage (static/assistance/...) / URL' },
+      { section: 'assistance', key: 'image_1', label: 'Assistance Image 1', type: 'image', ratio: 'landscape', hint: 'Object path Storage (static/assistance/...) / URL' },
+      { section: 'assistance', key: 'image_2', label: 'Assistance Image 2', type: 'image', ratio: 'landscape', hint: 'Object path Storage (static/assistance/...) / URL' },
     ],
   },
   {
@@ -98,7 +103,7 @@ export const CMS_SECTIONS: CmsSection[] = [
     title: 'About Page',
     description: 'Foto halaman About (teks About tetap statis).',
     fields: [
-      { section: 'about', key: 'image', label: 'About Image', type: 'image', hint: 'Object path Storage (static/about/...) / URL' },
+      { section: 'about', key: 'image', label: 'About Image', type: 'image', ratio: 'portrait', hint: 'Object path Storage (static/about/...) / URL' },
     ],
   },
   {
@@ -106,7 +111,7 @@ export const CMS_SECTIONS: CmsSection[] = [
     title: 'Contact Page',
     description: 'Foto halaman Contact (teks Contact tetap statis).',
     fields: [
-      { section: 'contact', key: 'image', label: 'Contact Image', type: 'image', hint: 'Object path Storage (static/contact/...) / URL' },
+      { section: 'contact', key: 'image', label: 'Contact Image', type: 'image', ratio: 'portrait', hint: 'Object path Storage (static/contact/...) / URL' },
     ],
   },
   {

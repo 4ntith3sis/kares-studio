@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
+import ConfirmDialog, {
+  type ConfirmDialogData,
+} from '@/components/admin/ConfirmDialog';
 import { CMS_SECTIONS } from '@/lib/cms-fields';
 import { resolveImageUrlPublic } from '@/lib/images';
 
@@ -28,6 +31,9 @@ export default function AdminCmsClient() {
 
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [needsMigration, setNeedsMigration] = useState(false);
+  const [confirm, setConfirm] = useState<
+    (ConfirmDialogData & { action: () => void }) | null
+  >(null);
 
   // Supabase public URL preview (never a local path as source).
   const previewUrl = (path: string) =>
@@ -91,11 +97,9 @@ export default function AdminCmsClient() {
     return out;
   }, [drafts, entryOf]);
 
-  const save = async () => {
-    if (dirty.length === 0) {
-      setNotice('Tidak ada perubahan.');
-      return;
-    }
+  const saveEntries = async (
+    list: { section: string; key: string; value?: string; image_url?: string }[]
+  ) => {
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -103,17 +107,35 @@ export default function AdminCmsClient() {
       const res = await fetch('/api/admin/cms', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries: dirty }),
+        body: JSON.stringify({ entries: list }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Simpan gagal.');
-      setNotice(`${data.updated ?? dirty.length} field tersimpan. Lihat hasilnya di Preview.`);
+      setNotice(`${data.updated ?? list.length} field tersimpan. Lihat hasilnya di Preview.`);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Simpan gagal.');
     } finally {
       setSaving(false);
     }
+  };
+
+  // Popup satu-satunya tempat tombol Save Changes muncul.
+  const openSavePopup = (
+    list: { section: string; key: string; value?: string; image_url?: string }[],
+    intro: string
+  ) => {
+    if (list.length === 0) {
+      setNotice('Tidak ada perubahan.');
+      return;
+    }
+    const names = list.map((e) => `${e.section}.${e.key}`).join(', ');
+    setConfirm({
+      title: 'Save Changes?',
+      message: `${intro} (${list.length} field: ${names}).`,
+      confirmLabel: 'Save Changes',
+      action: () => void saveEntries(list),
+    });
   };
 
   const uploadImage = async (section: string, key: string, file: File) => {
@@ -136,11 +158,18 @@ export default function AdminCmsClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Upload gagal.');
+      const path = (data as { path: string }).path;
+      const k = `${section}.${key}`;
       setDrafts((prev) => ({
         ...prev,
-        [`${section}.${key}`]: (data as { path: string }).path,
+        [k]: path,
       }));
-      setNotice('Gambar diunggah — klik Save Changes untuk menerapkan.');
+      // Popup satu-satunya tempat Save Changes: sertakan draft lain yg dirty.
+      const rest = dirty.filter((e) => `${e.section}.${e.key}` !== k);
+      openSavePopup(
+        [...rest, { section, key, image_url: path }],
+        'Gambar sudah diunggah dan siap dipasang'
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload gagal.');
     } finally {
@@ -150,18 +179,29 @@ export default function AdminCmsClient() {
 
   return (
     <AdminShell title="Homepage CMS">
+      <ConfirmDialog
+        dialog={confirm}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          const c = confirm;
+          setConfirm(null);
+          c?.action();
+        }}
+      />
       <div className="admin-toolbar">
         <a className="btn-outline" href="/" target="_blank" rel="noopener noreferrer">
           Preview Homepage ↗
         </a>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => void save()}
-          disabled={saving || dirty.length === 0}
-        >
-          {saving ? 'Saving…' : `Save Changes${dirty.length > 0 ? ` (${dirty.length})` : ''}`}
-        </button>
+        {dirty.length > 0 ? (
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={() => openSavePopup(dirty, 'Ada perubahan yang belum tersimpan')}
+            disabled={saving}
+          >
+            Review Perubahan ({dirty.length})
+          </button>
+        ) : null}
       </div>
       <p className="admin-muted">
         CMS hanya mengubah TULISAN dan FOTO. Layout, typography, spacing, dan
@@ -227,7 +267,7 @@ export default function AdminCmsClient() {
                         <span>
                           {previewUrl(val) ? (
                             <span
-                              className="admin-img-cell"
+                              className={`admin-img-cell${f.ratio === 'landscape' ? ' admin-img-cell-landscape' : ''}`}
                               style={{ margin: '.25rem 0 .5rem', display: 'block' }}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}

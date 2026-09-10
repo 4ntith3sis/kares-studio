@@ -27,6 +27,56 @@ export async function GET(req: Request) {
     const gate = await requireAdmin();
     if ('response' in gate) return gate.response;
     const supabase = getServiceSupabase();
+    type V = {
+      id: string;
+      product: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null;
+      color: { id: string; name: string; hex_code: string } | { id: string; name: string; hex_code: string }[] | null;
+      size: { id: string; name: string; sort_order: number } | { id: string; name: string; sort_order: number }[] | null;
+    };
+    const norm = <T,>(v: T | T[] | null): T | null =>
+      v === null ? null : Array.isArray(v) ? (v[0] ?? null) : v;
+
+    // ?history=1 → semua catatan penambahan/pengurangan + note, terbaru dulu.
+    if (searchParams.get('history') === '1') {
+      const { data, error } = await supabase
+        .from('inventory_transactions')
+        .select(
+          'id, type, quantity, note, created_at, variant:product_variants(product:products(name), color:colors(name), size:sizes(name))'
+        )
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      type H = {
+        id: string;
+        type: string;
+        quantity: number;
+        note: string | null;
+        created_at: string;
+        variant: {
+          product: { name: string } | { name: string }[] | null;
+          color: { name: string } | { name: string }[] | null;
+          size: { name: string } | { name: string }[] | null;
+        } | {
+          product: { name: string } | { name: string }[] | null;
+          color: { name: string } | { name: string }[] | null;
+          size: { name: string } | { name: string }[] | null;
+        }[] | null;
+      };
+      return NextResponse.json({
+        history: (((data ?? []) as unknown as H[]) ?? []).map((h) => {
+          const v = norm(h.variant);
+          return {
+            id: h.id,
+            type: h.type,
+            quantity: h.quantity,
+            note: h.note,
+            created_at: h.created_at,
+            productName: norm(v?.product ?? null)?.name ?? '—',
+            variantLabel: `${norm(v?.color ?? null)?.name ?? '?'} / ${norm(v?.size ?? null)?.name ?? '?'}`,
+          };
+        }),
+      });
+    }
     let q = supabase
       .from('product_variants')
       .select(
@@ -45,15 +95,6 @@ export async function GET(req: Request) {
         (r) => [r.variant_id, { total_in: r.total_in ?? 0, total_out: r.total_out ?? 0, stock: r.stock ?? 0 }]
       )
     );
-    type V = {
-      id: string;
-      product: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null;
-      color: { id: string; name: string; hex_code: string } | { id: string; name: string; hex_code: string }[] | null;
-      size: { id: string; name: string; sort_order: number } | { id: string; name: string; sort_order: number }[] | null;
-    };
-    const norm = <T,>(v: T | T[] | null): T | null =>
-      v === null ? null : Array.isArray(v) ? (v[0] ?? null) : v;
-
     return NextResponse.json({
       rows: ((((variants ?? []) as unknown as V[]) ?? [])
         // Exclude true orphans (no parent product). FK normally makes
