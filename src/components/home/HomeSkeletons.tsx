@@ -53,7 +53,7 @@ export function FeaturedSkeleton() {
     <section id="featured" aria-label="Loading featured products">
       <div className="container-main">
         <div className="feat-header">
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '3rem', flexWrap: 'wrap', minWidth: 0 }}>
             <div>
               <div
                 style={{

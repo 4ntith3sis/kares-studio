@@ -1732,3 +1732,378 @@ a.admin-stat-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rg
 @keyframes fadeUp  { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
 @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
 @keyframes heroSlide { from { opacity:0; transform:translateY(40px); } to { opacity:1; transform:translateY(0); } }
+
+/* ──────────────────────────────────────
+   RESPONSIVE SCALING (tablet + mobile only)
+   Prinsip: Desktop (>=1024px) = ukuran asli, tidak disentuh.
+   Tablet (768-1023px) = skala ~90% dari desktop.
+   Mobile (<768px) = skala ~80% dari desktop, reflow kompak
+   (bukan full-width raksasa). Seluruh aturan di bawah memakai
+   max-width query sehingga desktop tidak berubah.
+────────────────────────────────────── */
+
+/* Safety global (non-visual): cegah overflow, jaga proporsi media. */
+.grid-12 > *, .shop-layout > *, .pdp-layout > *, .cart-layout > *,
+.feat-header > *, .shop-toolbar > *, .admin-toolbar > * { min-width: 0; }
+h1, h2, h3, p, blockquote, .prod-name, .coll-name, .cart-item-name {
+  overflow-wrap: break-word; word-break: break-word;
+}
+img { height: auto; }
+input, select, textarea { max-width: 100%; min-width: 0; }
+.admin-table-wrap, .feat-scroll { -webkit-overflow-scrolling: touch; }
+
+/* ── Tablet (768-1023px): skala ~90% ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  body { font-size: 13.5px; }
+  .grid-12 { gap: 2rem; }
+
+  /* Section rhythm: desktop 7rem → tablet ~4.5rem */
+  #brand-statement, #categories, #featured, #quality, #assistance { padding-top: 4.5rem; padding-bottom: 4.5rem; }
+  #manifesto { padding-top: 5rem; padding-bottom: 5rem; }
+  .shop-page { padding-top: 3rem; padding-bottom: 5rem; }
+
+  /* Navbar mengecil */
+  #navbar .nav-inner { padding-top: .85rem; padding-bottom: .85rem; }
+  #navbar .brand { font-size: 1.3rem; }
+  #navbar .nav-links { gap: 1.75rem; }
+  #navbar .cart-btn { padding: .325rem .75rem; font-size: 10.5px; }
+
+  /* Buttons / inputs mengecil */
+  .btn-primary { padding: .75rem 1.6rem; font-size: 10.5px; }
+  .btn-outline { padding: .65rem 1.4rem; font-size: 10.5px; }
+  .filter-search { padding: .65rem 1.1rem; font-size: 12.5px; }
+  .price-row input { padding: .55rem .75rem; font-size: 11.5px; }
+  .shop-sort select { padding: .55rem .875rem; max-width: 10rem; }
+
+  /* Headings: batasi max agar proporsional di tablet */
+  #hero h1 { font-size: clamp(2.4rem, 7vw, 4rem); }
+  #hero .hero-left { min-height: 0; }
+  #brand-statement h2 { font-size: clamp(2.2rem, 6vw, 3.75rem); }
+  .cat-name { font-size: clamp(1.5rem, 3.4vw, 2.25rem); }
+  #featured h2, .shop-header h1 { font-size: clamp(2.1rem, 6vw, 3.25rem); }
+  #quality blockquote { font-size: clamp(1.35rem, 3vw, 2.4rem); }
+  #manifesto h2, #manifesto h2.mani-cms-heading { font-size: clamp(1.6rem, 4vw, 3.25rem); }
+  .asst-editorial .ed-title { font-size: clamp(1.8rem, 4.4vw, 3.25rem); }
+  .asst-editorial .ed-stat-num { font-size: clamp(1.75rem, 3.4vw, 2.6rem); }
+  .pdp-info h1 { font-size: clamp(1.8rem, 4.4vw, 2.6rem); }
+  .pdp-related h2 { font-size: clamp(1.6rem, 3.6vw, 2.25rem); }
+
+  /* Body text / labels sedikit mengecil */
+  #hero .hero-meta p, .cat-desc p, .shop-header p { font-size: 12.5px; }
+  .about-text-col p, .pdp-desc { font-size: 13px; }
+  .prod-name { font-size: 13px; }
+  .prod-price { font-size: 12px; }
+  .view-lbl { font-size: 1.9rem; }
+
+  /* Cards / images: sedikit lebih ramping */
+  .prod-card, .view-all-card { width: 300px; }
+  #hero .hero-img-wrap, #categories .cat-img-wrap { max-width: 380px; }
+  #brand-statement .shape-left { max-width: 440px; }
+  #brand-statement .shape-right { max-width: 300px; margin-left: auto; }
+  #quality .q-img-wrap { max-width: 340px; }
+  .pdp-main-img { max-width: 460px; }
+
+  /* Gaps / paddings */
+  .feat-scroll { gap: 1.25rem; }
+  .shop-grid { gap: 1.25rem; grid-template-columns: repeat(2, 1fr); }
+  .pdp-related-grid { grid-template-columns: repeat(2, 1fr); }
+  .feat-nav-btns button { width: 2.5rem; height: 2.5rem; }
+  .arrow-badge { width: 3rem; height: 3rem; }
+  .admin-panel { padding: 1.25rem; }
+  .about-pillar, .cart-summary { padding: 1.25rem; }
+  .foot-brand { font-size: 1.5rem; }
+}
+
+/* ── Mobile (<768px): skala ~80%, reflow kompak ── */
+@media (max-width: 767px) {
+  body { font-size: 13px; }
+  .grid-12 { gap: 1.75rem; }
+
+  /* Section rhythm proporsional */
+  #brand-statement, #categories, #featured, #quality, #assistance { padding-top: 3rem; padding-bottom: 3rem; }
+  #manifesto { padding-top: 3.5rem; padding-bottom: 3.5rem; }
+  .shop-page { padding-top: 1.75rem; padding-bottom: 3.5rem; }
+  .shop-header { margin-bottom: 1.75rem; }
+
+  /* Navbar kompak */
+  #navbar .nav-inner { padding-top: .75rem; padding-bottom: .75rem; }
+  #navbar .brand { font-size: 1.15rem; }
+  #navbar .nav-right { gap: .6rem; }
+  #navbar .cart-btn { padding: .3rem .7rem; font-size: 10px; }
+  #navbar .hamburger { width: 1.9rem; height: 1.9rem; }
+  #mobile-menu { padding: 1.1rem 1.25rem; }
+  #mobile-menu a { font-size: 1.2rem; padding: .4rem 0; }
+
+  /* Buttons / inputs: KECIL, bukan full-width raksasa */
+  .btn-primary { padding: .7rem 1.4rem; font-size: 10px; }
+  .btn-outline { padding: .6rem 1.25rem; font-size: 10px; }
+  .coll-get-started { padding: .55rem 1rem; font-size: 10px; }
+  .shop-filter-toggle { padding: .55rem 1rem; font-size: 10px; }
+  .started-btn { padding: .45rem 1rem; font-size: 11px; width: auto; justify-content: center; }
+  .filter-search, .price-row input, .cart-checkout input, .cart-checkout textarea,
+  .admin-form input, .admin-form select, .admin-form textarea { font-size: 12.5px; }
+  .filter-search { padding: .65rem 1rem; }
+  .price-row input { padding: .55rem .7rem; font-size: 11px; }
+  .shop-sort select { padding: .55rem .8rem; font-size: 10.5px; max-width: 9rem; }
+
+  /* Headings skala mobile */
+  #hero h1 { font-size: clamp(2rem, 11vw, 3rem); }
+  #brand-statement h2 { font-size: clamp(1.9rem, 9vw, 2.75rem); }
+  .cat-name { font-size: clamp(1.35rem, 6vw, 1.9rem); }
+  #featured h2, .shop-header h1 { font-size: clamp(1.9rem, 9vw, 2.6rem); }
+  #quality blockquote { font-size: clamp(1.25rem, 5.5vw, 1.9rem); }
+  #manifesto h2, #manifesto h2.mani-cms-heading { font-size: clamp(1.4rem, 6vw, 2.2rem); }
+  .asst-editorial .ed-title { font-size: clamp(1.7rem, 8vw, 2.6rem); }
+  .asst-editorial .ed-stat-num { font-size: clamp(1.6rem, 7vw, 2.2rem); }
+  .about-text-col h2 { font-size: clamp(1.5rem, 7vw, 2.2rem); }
+  .pdp-info h1 { font-size: clamp(1.6rem, 8vw, 2.3rem); }
+  .pdp-related h2 { font-size: clamp(1.4rem, 7vw, 2rem); }
+  .shop-state h2 { font-size: clamp(1.3rem, 6vw, 1.9rem); }
+  .view-lbl { font-size: 1.7rem; }
+  .pillar-name { font-size: clamp(1rem, 4.5vw, 1.25rem); }
+
+  /* Body text */
+  #hero .hero-meta p, .cat-desc p, .shop-header p,
+  .about-text-col p, .pdp-desc, .ed-quote { font-size: 12.5px; }
+  .prod-name, .cart-item-name { font-size: 12.5px; }
+  .prod-price, .cart-unit-price { font-size: 11.5px; }
+  .pdp-price { font-size: 13.5px; }
+  .shop-state p { font-size: 12.5px; }
+
+  /* Hero: reflow + gambar proporsional kecil */
+  #hero { min-height: 0; padding-top: 1.1rem; padding-bottom: 2.25rem; }
+  #hero .hero-grid { gap: 2rem; }
+  #hero .hero-top-label { flex-wrap: wrap; gap: .6rem; }
+  #hero .hero-meta { grid-template-columns: 1fr; gap: 1.1rem; margin-top: 1.75rem; }
+  #hero .hero-meta .badge-wrap { align-items: flex-start; }
+  #hero .hero-cta { flex-wrap: wrap; gap: .8rem; padding-top: 1.1rem; margin-top: 1.75rem; }
+  #hero .hero-img-wrap { max-width: 320px; margin-inline: auto; }
+  #hero .img-labels, #hero .hero-foot { max-width: 320px; margin-inline: auto; }
+  #hero .hero-foot { flex-wrap: wrap; gap: .4rem; }
+
+  /* Brand / categories / quality: gambar mengecil & center */
+  #brand-statement .stmt-header { margin-bottom: 2rem; }
+  #brand-statement .img-left-inner { flex-direction: column; align-items: stretch; gap: 1.1rem; }
+  #brand-statement .shape-left { max-width: 340px; }
+  #brand-statement .shape-right { max-width: 280px; margin-left: 0; }
+  #brand-statement .right-caption { text-align: left; }
+  .cat-name-group { min-width: 0; flex: 1; gap: 1rem; }
+  .cat-desc { padding-left: 0; }
+  #categories .cat-img-wrap { max-width: 320px; margin-inline: auto; }
+  #quality .q-img-wrap { max-width: 300px; }
+  .q-pillars { gap: 1.25rem; }
+
+  /* Carousel: kartu KECIL, bukan raksasa */
+  .feat-scroll { gap: .875rem; padding-right: 1.25rem; }
+  .prod-card, .view-all-card { width: min(200px, 60vw); }
+  .prod-info { margin-top: .75rem; }
+  .feat-footer { flex-wrap: wrap; gap: .875rem; }
+  .progress-bar-bg { width: 5rem; }
+  .feat-nav-btns button { width: 2.25rem; height: 2.25rem; }
+  .arrow-badge { width: 2.75rem; height: 2.75rem; }
+
+  /* Manifesto / assistance kompak */
+  .mani-cta { flex-wrap: wrap; gap: .875rem; padding-top: 1.5rem; margin-top: 2rem; }
+  .asst-topbar { flex-wrap: wrap; gap: .5rem; font-size: 10px; }
+  .asst-img-duo { gap: 1rem; max-width: 340px; margin-inline: auto; }
+  .asst-img-wrap.offset-top { transform: none; }
+  .asst-img-wrap.offset-top .ph { transform: none; }
+  .asst-img-wrap.offset-bottom { transform: none; }
+  .asst-label-above { max-width: 100%; }
+  .asst-label-above span { font-size: 12px; }
+  .coll-item { padding: .75rem 0; }
+  .coll-item-left { min-width: 0; }
+  .coll-icon-wrap { width: 2rem; height: 2rem; }
+  .coll-name { font-size: 13px; }
+  .coll-cta-row { flex-wrap: wrap; gap: .875rem; }
+  .coll-cta-desc { max-width: 100%; font-size: 10.5px; }
+  .asst-editorial { gap: 1.1rem; }
+  .asst-editorial .ed-sub { font-size: 11.5px; padding-top: 1rem; }
+  .asst-editorial .ed-stats { flex-wrap: wrap; gap: 1.1rem; }
+  .ed-testimonial { padding: 1.1rem; }
+  .ed-quote { line-height: 1.6; }
+
+  /* Footer mengecil */
+  #footer { padding-top: 3.5rem; }
+  .foot-top { gap: 1.75rem; padding-bottom: 2.5rem; }
+  .foot-brand { font-size: 1.4rem; margin-bottom: 1rem; }
+  .socials a { width: 2rem; height: 2rem; font-size: 10px; }
+  .foot-address { font-size: 11px; }
+  .foot-links-grid { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+  .link-col ul li a { font-size: 11px; }
+  .foot-tagline { font-size: 10.5px; }
+  .bottom-links { gap: .875rem; }
+
+  /* Collection: grid tetap 2 kolom kecil */
+  .shop-toolbar { gap: .75rem; padding-bottom: 1rem; margin-bottom: 1.25rem; }
+  .shop-count { font-size: 10px; }
+  .shop-sort { gap: .5rem; }
+  .shop-grid { grid-template-columns: repeat(2, 1fr); gap: .875rem; }
+  .price-row { gap: .6rem; }
+  .filter-label { font-size: 10px; margin-bottom: .75rem; }
+  .filter-hint { font-size: 9.5px; }
+
+  /* PDP kompak */
+  .pdp-layout { gap: 2rem; }
+  .pdp-breadcrumb { font-size: 10px; margin-bottom: 1.5rem; }
+  .pdp-main-img { max-width: 100%; }
+  .pdp-meta, .pdp-desc, .pdp-selectors { max-width: 100%; }
+  .pdp-meta { flex-wrap: wrap; gap: .5rem; font-size: 12px; }
+  .pdp-swatches { gap: .6rem; }
+  .pdp-swatch { width: 2rem; height: 2rem; }
+  .pdp-size { min-width: 2.6rem; padding: .55rem .85rem; font-size: 10.5px; }
+  .pdp-actions, .pdp-buy-row { gap: .75rem; }
+  .pdp-thumbs { overflow-x: auto; padding-bottom: .25rem; }
+  .pdp-thumb { width: 3.75rem; height: 5rem; }
+
+  /* Cart kompak */
+  .cart-layout { gap: 1.5rem; }
+  .cart-item { grid-template-columns: 84px 1fr; gap: .875rem; padding: .875rem; }
+  .cart-item-head { gap: .6rem; }
+  .cart-remove { padding: .3rem .7rem; font-size: 9.5px; }
+  .cart-item-foot { gap: .7rem; }
+  .cart-summary { padding: 1.1rem; gap: 1rem; }
+  .cart-totals dd { font-size: 13px; }
+  .cart-totals .cart-grand dd { font-size: 1.1rem; }
+  .cart-checkout input, .cart-checkout textarea { padding: .65rem .875rem; }
+
+  /* About / contact */
+  .about-story { margin-bottom: 2.5rem; }
+  .about-img-wrap { max-width: 320px; margin-inline: auto; }
+  .about-pillar { padding: 1.1rem; }
+  .contact-img-wrap { max-width: 300px; margin-inline: auto; }
+  .contact-list-col .coll-year { word-break: break-all; }
+
+  /* Admin: skala kecil, tetap fungsional */
+  .admin-content { padding: 1rem; gap: 1rem; }
+  .admin-topbar { padding: 1rem; }
+  .admin-topbar h1 { font-size: 1.1rem; }
+  .admin-panel { padding: 1.1rem; }
+  .admin-stat-value { font-size: 1.6rem; }
+  .admin-toolbar input[type="search"], .admin-toolbar input[type="text"], .admin-toolbar select { padding: .55rem .875rem; font-size: 12px; }
+  .modal-dialog { padding: 1.1rem; max-height: calc(100vh - 2rem); }
+  .modal-head h2 { font-size: 1.05rem; }
+}
+
+/* ── HP kecil (<=479px): pengetatan ekstra ── */
+@media (max-width: 479px) {
+  .container-main { padding-inline: 1rem; }
+  .grid-12 { gap: 1.5rem; }
+  #hero h1 { font-size: clamp(1.8rem, 12vw, 2.5rem); }
+  #featured h2, .shop-header h1 { font-size: clamp(1.7rem, 10vw, 2.2rem); }
+  .prod-card, .view-all-card { width: min(168px, 58vw); }
+  .prod-name { font-size: 12px; }
+  .prod-price { font-size: 11px; }
+  .shop-grid { gap: .75rem; }
+  .feat-scroll-track { padding-left: 1rem; }
+  .feat-scroll { padding-right: 1rem; }
+  .q-pillars { grid-template-columns: 1fr; }
+  .asst-editorial .ed-stats { gap: 1rem; }
+  .cart-item { grid-template-columns: 72px 1fr; padding: .75rem; }
+  .admin-stats { grid-template-columns: repeat(2, 1fr); }
+  .modal-stock-box, .modal-type-row { grid-template-columns: 1fr 1fr; }
+  .btn-primary { padding: .65rem 1.25rem; }
+}
+
+/* ──────────────────────────────────────
+   HOMEPAGE LAYOUT TIDY (tablet + mobile only)
+   Urutan section tetap (Navbar → Hero → Brand → Categories →
+   Featured → Quality → Manifesto → Assistance → Footer) karena
+   sudah sesuai hierarchy. Blok ini hanya merapikan ritme,
+   alignment, dan keterbacaan di viewport kecil. Desktop untouched.
+────────────────────────────────────── */
+
+/* ── Tablet (768-1023px): manfaatkan lebar, batasi measure ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Keterbacaan: batasi panjang baris teks editorial */
+  #quality blockquote { max-width: 36rem; }
+  #brand-statement .right-caption .q { max-width: 22rem; margin-left: auto; }
+  #manifesto h2, #manifesto h2.mani-cms-heading { max-width: 56rem; }
+
+  /* Ritme header → konten konsisten per section */
+  #brand-statement .stmt-header { margin-bottom: 3rem; }
+  #featured .feat-header { margin-bottom: 2.5rem; }
+  #categories .section-tag { margin-bottom: 1.25rem; }
+
+  /* Hero stack: teks lalu gambar, jarak seimbang */
+  #hero .hero-grid { gap: 2.75rem; }
+  #hero .hero-meta { margin-top: 2rem; }
+  #hero .hero-cta { margin-top: 2rem; }
+
+  /* Brand: unit kanan (gambar + caption) tetap satu kesatuan rata kanan */
+  #brand-statement .img-right-col { display: flex; flex-direction: column; align-items: flex-end; }
+  #brand-statement .right-caption { max-width: 22rem; }
+
+  /* Categories: list dan preview seimbang, cegah arrow terdorong */
+  .cat-item-row { gap: 1rem; }
+  .cat-name-group { min-width: 0; flex: 1; }
+  .cat-arrow { flex-shrink: 0; }
+
+  /* Assistance: duo foto center, list tetap rapat */
+  #assistance .asst-img-col { display: flex; justify-content: center; }
+  .coll-item { gap: .75rem; }
+
+  /* Quality: tag → gambar → teks berdekatan, pillars sejajar */
+  #quality .q-img-col { gap: .875rem; }
+  #quality .q-text-col { gap: 1.75rem; }
+  .q-pillars { gap: 1.75rem; }
+
+  /* Footer tablet: brand di atas, 3 kolom link manfaatkan lebar */
+  .foot-top { gap: 2.5rem; }
+}
+
+/* ── Mobile (<768px): ritme compact, alignment konsisten ── */
+@media (max-width: 767px) {
+  /* Hero: ritme vertikal genap top-label → heading → meta → CTA → gambar */
+  #hero .hero-left { gap: 1.5rem; }
+  #hero .hero-top-label { margin-bottom: 0; }
+  #hero .hero-meta { margin-top: 0; }
+  #hero .hero-cta { margin-top: 0; }
+  #hero .hero-right { gap: .25rem; }
+
+  /* Brand: header rapat, badge tidak keluar viewport */
+  #brand-statement .stmt-header { gap: 1.25rem; margin-bottom: 2rem; }
+  #brand-statement .stmt-right { max-width: 100%; }
+  #brand-statement .img-left-inner { gap: 1rem; }
+  #brand-statement .left-caption { padding-bottom: 0; }
+
+  /* Categories mobile: tanpa hover di sentuh — tampilkan desc ringkas,
+     bukan disembunyikan. Padding item lebih compact. */
+  .cat-item { padding: .8rem 0; }
+  .cat-item-row { gap: .75rem; }
+  .cat-desc { display: block; padding-left: 0; margin-top: .6rem; }
+  .cat-desc p { font-size: 12px; }
+  .cat-desc a { margin-top: .6rem; }
+
+  /* Featured: header → strip → footer berurutan rapat */
+  #featured .feat-header { gap: 1.25rem; margin-bottom: 2rem; }
+  #featured .feat-footer { margin-top: 1.75rem; }
+
+  /* Quality: gambar → quote → pillars, satu alur kiri */
+  #quality .q-img-col { gap: .75rem; }
+  #quality .q-text-col { gap: 1.5rem; }
+  #quality blockquote { max-width: 100%; }
+
+  /* Manifesto: heading center, CTA di bawahnya */
+  #manifesto .mani-inner { gap: 0; }
+  #manifesto h2, #manifesto h2.mani-cms-heading { max-width: 100%; }
+  .mani-cta { width: 100%; }
+
+  /* Assistance: foto duo kecil di atas, list + CTA di bawahnya */
+  #assistance .asst-text-col { gap: 0; }
+  .coll-list { width: 100%; }
+  .coll-item-left { gap: .8rem; }
+
+  /* Footer: brand → links → bottom, jarak tegas antar grup */
+  .foot-top { gap: 2rem; }
+  .foot-links-grid { row-gap: 1.5rem; }
+  .foot-bottom { gap: 1.25rem; }
+
+  /* Jarak heading → konten seragam di section homepage */
+  #brand-statement .section-tag,
+  #featured .section-tag,
+  #quality .section-tag,
+  #manifesto .section-tag,
+  #assistance .section-tag { margin-bottom: .75rem; }
+  #categories .section-tag { margin-bottom: 1rem; }
+}

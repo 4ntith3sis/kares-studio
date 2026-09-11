@@ -54,7 +54,7 @@ export default function FeaturedCarousel({ products, cms = {} }: Props) {
     <section id="featured">
       <div className="container-main">
         <div className="feat-header">
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '3rem', flexWrap: 'wrap', minWidth: 0 }}>
             <div>
               <div
                 style={{
@@ -96,6 +96,8 @@ export default function FeaturedCarousel({ products, cms = {} }: Props) {
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '1.5rem',
+              flexWrap: 'wrap',
+              minWidth: 0,
             }}
           >
             <span
