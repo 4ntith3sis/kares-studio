@@ -1,7 +1,6 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/home/Footer';
 import CardImage from '@/components/home/CardImage';
-import ScrollReveal from '@/components/home/ScrollReveal';
 import { cmsImageUrl, getHomepageContent } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
 
@@ -48,7 +47,7 @@ export default async function ContactPage() {
     <>
       <Navbar />
       <main className="container-main shop-page">
-        <div className="shop-header" data-reveal>
+        <div className="shop-header">
           <div className="section-tag">
             <span className="star">✹</span>
             <span className="label">[CONTACT // KARES STUDIO]</span>
@@ -62,7 +61,7 @@ export default async function ContactPage() {
 
         <div className="grid-12 contact-layout" style={{ alignItems: 'start' }}>
           <div className="contact-img-col">
-            <div className="contact-img-wrap" data-image-reveal>
+            <div className="contact-img-wrap">
               <CardImage
                 src={image}
                 alt="Kares Studio contact"
@@ -76,7 +75,7 @@ export default async function ContactPage() {
             </p>
           </div>
 
-          <div className="contact-list-col" data-reveal data-delay="120">
+          <div className="contact-list-col">
             <div className="coll-list">
               {CHANNELS.map((c) => (
                 <a
@@ -114,7 +113,6 @@ export default async function ContactPage() {
         </div>
       </main>
       <Footer />
-      <ScrollReveal />
     </>
   );
 }

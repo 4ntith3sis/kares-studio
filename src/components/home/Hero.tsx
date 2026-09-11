@@ -111,7 +111,7 @@ export default function Hero({ cms = {} }: { cms?: HomepageCmsMap }) {
               <span>[SCROLL DOWN]</span>
             </div>
 
-            <div className="hero-img-wrap" data-parallax>
+            <div className="hero-img-wrap">
               <CardImage
                 src={heroImage}
                 alt="Kares Studio featured look"

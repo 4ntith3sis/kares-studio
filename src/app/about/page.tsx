@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/home/Footer';
 import CardImage from '@/components/home/CardImage';
-import ScrollReveal from '@/components/home/ScrollReveal';
 import { cmsImageUrl } from '@/services/cms';
 import { getHomepageContent } from '@/services/cms';
 import type { HomepageCmsMap } from '@/services/cms';
@@ -42,7 +41,7 @@ export default async function AboutPage() {
     <>
       <Navbar />
       <main className="container-main shop-page">
-        <div className="shop-header" data-reveal>
+        <div className="shop-header">
           <div className="section-tag">
             <span className="star">✹</span>
             <span className="label">[ABOUT // KARES STUDIO]</span>
@@ -56,7 +55,7 @@ export default async function AboutPage() {
 
         <div className="grid-12 about-story" style={{ alignItems: 'center' }}>
           <div className="about-img-col">
-            <div className="about-img-wrap" data-image-reveal>
+            <div className="about-img-wrap">
               <CardImage
                 src={image}
                 alt="Kares Studio campaign 2026"
@@ -68,7 +67,7 @@ export default async function AboutPage() {
               <div className="cat-dot">✹</div>
             </div>
           </div>
-          <div className="about-text-col" data-reveal data-delay="120">
+          <div className="about-text-col">
             <span className="ed-eyebrow">{"// OUR STORY"}</span>
             <h2>
               Fashion is more than clothing — <span className="it">it&rsquo;s expression.</span>
@@ -92,7 +91,7 @@ export default async function AboutPage() {
             <span className="star">✹</span>
             <span className="label">[WHAT WE STAND FOR]</span>
           </div>
-          <div className="about-pillar-grid pillar-stagger">
+          <div className="about-pillar-grid">
             {PILLARS.map((p, i) => (
               <div key={p.name} className="about-pillar">
                 <span className="pillar-num">[0{i + 1}]</span>
@@ -114,7 +113,6 @@ export default async function AboutPage() {
         </div>
       </main>
       <Footer />
-      <ScrollReveal />
     </>
   );
 }

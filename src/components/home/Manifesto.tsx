@@ -23,12 +23,12 @@ export default function Manifesto({ cms = {} }: { cms?: HomepageCmsMap }) {
   return (
     <section id="manifesto">
       <div className="container-main mani-inner">
-        <div className="section-tag" style={{ marginBottom: '2rem' }} data-reveal>
+        <div className="section-tag" style={{ marginBottom: '2rem' }}>
           <span className="star">✹</span>
           <span className="label">[OUR PHILOSOPHY]</span>
         </div>
 
-        <h2 className="mani-cms-heading" data-reveal data-delay="120">
+        <h2 className="mani-cms-heading">
           {justEnd === -1 ? (
             heading
           ) : (
@@ -46,7 +46,7 @@ export default function Manifesto({ cms = {} }: { cms?: HomepageCmsMap }) {
           )}
         </h2>
 
-        <div className="mani-cta" data-reveal data-delay="200">
+        <div className="mani-cta">
           <Link href="/about" className="btn-outline">
             LEARN MORE
             <svg

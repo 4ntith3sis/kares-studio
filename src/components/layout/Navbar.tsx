@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCart } from '@/components/cart/CartStore';
 
 const NAV_LINKS = [
@@ -23,18 +23,6 @@ function isLinkActive(pathname: string, href: string): boolean {
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-
-  // Lightweight route transition: fade + translateY on <main> per
-  // navigation. Respects reduced-motion; never blocks navigation.
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const main = document.querySelector('main');
-    if (!main) return;
-    main.classList.remove('page-enter');
-    // Force reflow so the animation restarts on every route change.
-    void (main as HTMLElement).offsetWidth;
-    main.classList.add('page-enter');
-  }, [pathname]);
 
   return (
     <header id="navbar">

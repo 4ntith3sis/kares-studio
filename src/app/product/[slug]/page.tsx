@@ -5,7 +5,6 @@ import Footer from '@/components/home/Footer';
 import ProductGallery from '@/components/product/ProductGallery';
 import ProductVariantSelector from '@/components/product/ProductVariantSelector';
 import RelatedProducts from '@/components/product/RelatedProducts';
-import ScrollReveal from '@/components/home/ScrollReveal';
 import { formatIDR } from '@/lib/utils/format';
 import { getProductDetail, getRelatedProducts } from '@/services/products';
 
@@ -108,7 +107,7 @@ export default async function ProductDetailPage({
         <div className="pdp-layout">
           <ProductGallery product={product} />
 
-          <div className="pdp-info pdp-enter">
+          <div className="pdp-info">
             <div className="section-tag">
               <span className="star">✹</span>
               <span className="label">
@@ -148,7 +147,6 @@ export default async function ProductDetailPage({
         <RelatedProducts products={related} />
       </main>
       <Footer />
-      <ScrollReveal />
     </>
   );
 }

@@ -24,7 +24,7 @@ export default function ProductGallery({
     product.gallery.find((g) => g.id === activeId) ?? product.gallery[0];
 
   return (
-    <div className="pdp-gallery pdp-gallery-enter">
+    <div className="pdp-gallery">
       <div className="pdp-main-img">
         {active?.imageSrc ? (
           <CardImage

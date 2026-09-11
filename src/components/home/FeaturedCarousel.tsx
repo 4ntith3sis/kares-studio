@@ -53,7 +53,7 @@ export default function FeaturedCarousel({ products, cms = {} }: Props) {
   return (
     <section id="featured">
       <div className="container-main">
-        <div className="feat-header" data-reveal>
+        <div className="feat-header">
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '3rem', flexWrap: 'wrap', minWidth: 0 }}>
             <div>
               <div
