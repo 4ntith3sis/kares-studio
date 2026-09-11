@@ -16,11 +16,11 @@ export default function Quality({ cms = {} }: { cms?: HomepageCmsMap }) {
     <section id="quality">
       <div className="container-main grid-12" style={{ alignItems: 'center' }}>
         <div className="q-img-col">
-          <div className="section-tag" style={{ marginBottom: '.5rem' }}>
+          <div className="section-tag" style={{ marginBottom: '.5rem' }} data-reveal>
             <span className="star">✹</span>
             <span className="label">{tag}</span>
           </div>
-          <div className="q-img-wrap">
+          <div className="q-img-wrap" data-image-reveal data-parallax>
             <CardImage
               src={image}
               alt="Kares Studio crafted with precision"
@@ -32,7 +32,7 @@ export default function Quality({ cms = {} }: { cms?: HomepageCmsMap }) {
         </div>
 
         <div className="q-text-col">
-          <div>
+          <div data-reveal>
             <span
               style={{
                 fontFamily: "'DM Mono',monospace",
@@ -46,8 +46,8 @@ export default function Quality({ cms = {} }: { cms?: HomepageCmsMap }) {
               {'// BRAND ESSENCE'}
             </span>
           </div>
-          <blockquote>{quote}</blockquote>
-          <div className="q-pillars">
+          <blockquote data-reveal data-delay="120">{quote}</blockquote>
+          <div className="q-pillars" data-reveal data-delay="200">
             <div>
               <span className="pillar-name">PREMIUM FABRICS</span>
               <span className="pillar-sub">HEAVYWEIGHT &amp; DURABLE</span>

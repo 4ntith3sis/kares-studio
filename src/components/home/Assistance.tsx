@@ -83,7 +83,7 @@ export default function Assistance({
   return (
     <section id="assistance">
       <div className="container-main">
-        <div className="asst-topbar">
+        <div className="asst-topbar" data-reveal>
           <div className="left-tag">
             <span style={{ color: 'var(--accent)' }}>✹</span>
             <span>{tag}</span>
@@ -95,7 +95,7 @@ export default function Assistance({
           <div className="asst-img-col">
             <div className="asst-img-duo">
               <div className="asst-photo-col left">
-                <div className="asst-img-wrap offset-top">
+                <div className="asst-img-wrap offset-top" data-image-reveal>
                   <CardImage
                     src={img1}
                     alt="Kares Studio look 01"
@@ -112,7 +112,7 @@ export default function Assistance({
                 <div className="asst-label-above">
                   <span>From timeless classics to bold statement pieces, our collections are thoughtfully.</span>
                 </div>
-                <div className="asst-img-wrap offset-bottom">
+                <div className="asst-img-wrap offset-bottom" data-image-reveal data-delay="140">
                   <CardImage
                     src={img2}
                     alt="Kares Studio look 02"
@@ -123,7 +123,7 @@ export default function Assistance({
             </div>
           </div>
 
-          <div className="asst-text-col">
+          <div className="asst-text-col" data-reveal data-delay="120">
             <div className="coll-list">
               {COLLECTIONS.slice(0, 3).map((c, i) => (
                 <div

@@ -298,7 +298,7 @@ export default function CollectionExplorer({
 
       <div className="shop-layout">
         <aside
-          className={`shop-sidebar${filtersOpen ? ' open' : ''}`}
+          className={`shop-sidebar shop-sidebar-enter${filtersOpen ? ' open' : ''}`}
           aria-label="Filter koleksi"
         >
           {filterPanel}
@@ -327,7 +327,7 @@ export default function CollectionExplorer({
               </div>
             </div>
           ) : (
-            <div className="shop-grid">
+            <div className="shop-grid shop-grid-enter">
               {results.map((p) => (
                 <Link
                   href={`/product/${p.slug}`}

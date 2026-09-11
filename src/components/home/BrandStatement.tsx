@@ -25,14 +25,14 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
     <section id="brand-statement">
       <div className="container-main">
         <div className="stmt-header">
-          <div>
+          <div data-reveal>
             <div className="section-tag" style={{ marginBottom: '.75rem' }}>
               <span className="star">✹</span>
               <span className="label">[STATEMENT // 2026]</span>
             </div>
             <h2>{heading}</h2>
           </div>
-          <div className="stmt-right">
+          <div className="stmt-right" data-reveal data-delay="120">
             <span
               style={{
                 fontFamily: "'DM Mono',monospace",
@@ -62,7 +62,7 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
         <div className="grid-12" style={{ alignItems: 'center' }}>
           <div className="img-left-col">
             <div className="img-left-inner">
-              <div className="shape-left">
+              <div className="shape-left" data-image-reveal data-parallax>
                 <CardImage
                   src={imageLeft}
                   alt="Kares Studio campaign 2026"
@@ -85,7 +85,7 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
                   </svg>
                 </div>
               </div>
-              <div className="left-caption">
+              <div className="left-caption" data-reveal data-delay="120">
                 <p className="c">©KARES STUDIO / CAMPAIGN 2026</p>
                 <span className="ess">[ESSENTIAL RELEASE]</span>
                 <span
@@ -106,13 +106,13 @@ export default function BrandStatement({ cms = {} }: { cms?: HomepageCmsMap }) {
           </div>
 
           <div className="img-right-col">
-            <div className="shape-right">
+            <div className="shape-right" data-image-reveal>
               <CardImage
                 src={imageRight}
                 alt="Kares Studio lookbook jacket 2026"
               />
             </div>
-            <div className="right-caption">
+            <div className="right-caption" data-reveal data-delay="140">
               <p className="c">©KARES STUDIO - JACKET 2026</p>
               <p className="q">{quote}</p>
               <Link href="/collection" aria-label="View Kares Studio lookbook" style={{ display: 'none' }}>

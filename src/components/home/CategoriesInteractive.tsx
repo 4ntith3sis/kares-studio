@@ -36,15 +36,17 @@ export default function CategoriesInteractive({ categories }: Props) {
   return (
     <div className="grid-12" style={{ alignItems: 'center' }}>
       <div className="cat-list-col">
-        <div className="section-tag" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-tag" style={{ marginBottom: '1.5rem' }} data-reveal>
           <span className="star">✹</span>
           <span className="label">[CATEGORIES]</span>
         </div>
         <div id="cat-list">
-          {categories.map((cat) => (
+          {categories.map((cat, i) => (
             <div
               key={cat.slug || cat.id}
               className="cat-item"
+              data-reveal
+              data-delay={String(Math.min(i, 3) * 80)}
               onMouseEnter={() => setActiveNum(cat.num)}
             >
               <div className="cat-item-row">
@@ -78,7 +80,7 @@ export default function CategoriesInteractive({ categories }: Props) {
       </div>
 
       <div className="cat-img-col">
-        <div className="cat-img-wrap">
+        <div className="cat-img-wrap" data-image-reveal>
           {active?.imageSrc ? (
             <CardImage
               key={active.slug || active.id}

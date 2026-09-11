@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/home/Footer';
 import CollectionExplorer from '@/components/collection/CollectionExplorer';
+import ScrollReveal from '@/components/home/ScrollReveal';
 import {
   CollectionDbEmptyState,
   CollectionErrorState,
@@ -23,13 +24,14 @@ function CollectionShell({ children }: { children: ReactNode }) {
       <Navbar />
       <main className="container-main shop-page">{children}</main>
       <Footer />
+      <ScrollReveal />
     </>
   );
 }
 
 function CollectionHeader() {
   return (
-    <div className="shop-header">
+    <div className="shop-header" data-reveal>
       <div className="section-tag">
         <span className="star">✹</span>
         <span className="label">[COLLECTION]</span>
