@@ -2107,3 +2107,77 @@ input, select, textarea { max-width: 100%; min-width: 0; }
   #assistance .section-tag { margin-bottom: .75rem; }
   #categories .section-tag { margin-bottom: 1rem; }
 }
+
+/* ──────────────────────────────────────
+   SUBTLE MOTION LAYER (additive only)
+   Prinsip: hanya :hover/:active/:focus-visible + transition.
+   Tidak mengubah layout, warna, font, ukuran, struktur, atau
+   rule existing mana pun. Opacity/transform saja (performant).
+   - (A) Hero entrance & (B) scroll reveal: sudah ada di baseline
+     (.anim-hero-* dan ScrollReveal fadeUp) — tidak ditambah.
+   - (F) Parallax: DILEWATI — butuh kompensasi scale pada image
+     yang mengisi clip-path card (mengubah tampilan visual).
+────────────────────────────────────── */
+
+/* (C) Product hover — image scale ringan, card tidak resize. */
+.prod-card .prod-img img {
+  transition: transform .5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.prod-card:hover .prod-img img,
+.prod-card:focus-visible .prod-img img {
+  transform: scale(1.03);
+}
+
+/* (D) Category hover — teks bergeser ringan saat hover. */
+.cat-item .cat-name {
+  transition: transform .35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cat-item:hover .cat-name,
+.cat-item:focus-visible .cat-name {
+  transform: translateX(8px);
+}
+
+/* (E) Button hover — lift sangat kecil + arrow bergeser. */
+.btn-primary,
+.btn-outline,
+.coll-get-started {
+  transition:
+    background .3s ease,
+    color .3s ease,
+    border-color .3s ease,
+    transform .3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-primary:hover,
+.btn-outline:hover,
+.coll-get-started:hover {
+  transform: translateY(-1px);
+}
+.btn-primary:active,
+.btn-outline:active,
+.coll-get-started:active {
+  transform: translateY(0);
+}
+.btn-primary svg,
+.btn-outline svg,
+.coll-get-started svg {
+  transition: transform .3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-primary:hover svg,
+.btn-outline:hover svg,
+.coll-get-started:hover svg {
+  transform: translateX(4px);
+}
+
+/* Accessibility: matikan micro-interaction bila reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .prod-card:hover .prod-img img,
+  .cat-item:hover .cat-name,
+  .btn-primary:hover,
+  .btn-outline:hover,
+  .coll-get-started:hover,
+  .btn-primary:hover svg,
+  .btn-outline:hover svg,
+  .coll-get-started:hover svg {
+    transform: none;
+  }
+}
